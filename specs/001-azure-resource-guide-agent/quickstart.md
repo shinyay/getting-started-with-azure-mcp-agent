@@ -128,7 +128,7 @@ python src/azure_mcp_agent/main.py
 - Ctrl+C を押す
 - Ctrl+D を押す
 
-## 現在の実装状況（Phase 2 完了時点）
+## 現在の実装状況（Phase 3 完了時点）
 
 ✅ **実装済み:**
 - 設定管理（config.py）
@@ -137,14 +137,14 @@ python src/azure_mcp_agent/main.py
 - エージェント本体（agent.py）
 - 対話型 CLI（cli.py）
 - メインエントリポイント（main.py）
+- **User Story 1: リソースグループ一覧** ✨ NEW
+  - 日本語での自然言語クエリに対応
+  - 空のサブスクリプション・権限エラーのハンドリング
+  - テストコード完備（test_agent_basic.py, test_cli.py）
 
-⏳ **未実装（Phase 3-5 で対応予定）:**
-- User Story 1: リソースグループ一覧の具体的な実装
+⏳ **未実装（Phase 4-5 で対応予定）:**
 - User Story 2: ストレージアカウント一覧の具体的な実装
 - User Story 3: Log Analytics エラー要約の具体的な実装
-
-現時点では、Azure MCP Server 経由で一般的な質問には応答できますが、
-上記の User Story 固有のロジックはまだ実装されていません。
 
 ## トラブルシューティング
 
