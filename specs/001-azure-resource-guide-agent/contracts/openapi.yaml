@@ -1,0 +1,132 @@
+openapi: 3.1.0
+info:
+  title: Azure Resource Guide Agent API
+  version: 0.1.0
+  description: |
+    Internal contract describing the logical operations exposed by the Azure Resource Guide Agent.
+    This is not necessarily a real HTTP API in v0, but defines stable operation shapes for the agent.
+
+paths:
+  /resource-groups:
+    get:
+      summary: List resource groups in a subscription
+      parameters:
+        - in: query
+          name: subscriptionId
+          required: true
+          schema:
+            type: string
+          description: Azure subscription ID to query.
+      responses:
+        '200':
+          description: List of resource groups.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resourceGroups:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        location:
+                          type: string
+                        tags:
+                          type: object
+                          additionalProperties:
+                            type: string
+        '403':
+          description: Permission denied for the given subscription.
+        '404':
+          description: Subscription not found.
+
+  /storage-accounts:
+    get:
+      summary: List storage accounts in a resource group
+      parameters:
+        - in: query
+          name: subscriptionId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: resourceGroup
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of storage accounts.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  storageAccounts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        location:
+                          type: string
+                        kind:
+                          type: string
+                        skuName:
+                          type: string
+        '403':
+          description: Permission denied for the given resource group.
+        '404':
+          description: Resource group not found.
+
+  /log-analytics/errors:
+    get:
+      summary: Summarize recent errors using Log Analytics
+      parameters:
+        - in: query
+          name: workspaceId
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: subscriptionId
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: timespan
+          required: true
+          schema:
+            type: string
+          description: ISO 8601 duration or custom window (e.g., 'PT1H' for last hour).
+      responses:
+        '200':
+          description: Aggregated error summary.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalErrors:
+                    type: integer
+                  byCategory:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        category:
+                          type: string
+                        count:
+                          type: integer
+                  sampleMessages:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: Invalid request (e.g., both workspaceId and subscriptionId missing).
+        '404':
+          description: Workspace or subscription not found.
