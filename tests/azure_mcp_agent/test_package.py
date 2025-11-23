@@ -25,7 +25,6 @@ def test_package_metadata():
     """Test that basic package metadata is available"""
     # Read pyproject.toml to verify metadata
     from pathlib import Path
-    import re
     
     repo_root = Path(__file__).parent.parent.parent
     pyproject_path = repo_root / "pyproject.toml"
