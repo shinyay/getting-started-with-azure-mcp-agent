@@ -39,7 +39,7 @@ export GITHUB_API_KEY="your-github-token-here"
 
 **GitHub Token の取得方法:**
 1. GitHub の Settings → Developer settings → Personal access tokens
-2. 新しいトークンを生成（`repo` スコープが必要）
+2. 新しいトークンを生成（GitHub Models API へのアクセス権限が必要。`repo` スコープは不要です）
 3. 生成されたトークンを `GITHUB_API_KEY` に設定
 
 #### Azure OpenAI を使用する場合

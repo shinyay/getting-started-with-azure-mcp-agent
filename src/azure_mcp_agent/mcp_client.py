@@ -6,7 +6,7 @@ to connect to Azure MCP Server for read-only Azure resource queries.
 
 from agent_framework import MCPStdioTool
 from .config import Settings
-from .prompts import TOOL_DESCRIPTIONS
+from .prompts import TOOL_DESCRIPTIONS, get_error_message
 
 
 def create_azure_mcp_tool(settings: Settings) -> MCPStdioTool:
@@ -30,13 +30,12 @@ def create_azure_mcp_tool(settings: Settings) -> MCPStdioTool:
         )
         return tool
     except Exception as e:
+        error_msg = get_error_message("mcp_connection_error")
         raise RuntimeError(
-            f"Azure MCP Server への接続に失敗しました: {e}\n\n"
-            f"以下を確認してください:\n"
-            f"  1. Node.js / npm がインストールされていること\n"
-            f"  2. Azure MCP Server が起動可能であること\n"
-            f"     コマンド: {settings.mcp_command} {' '.join(settings.mcp_args)}\n"
-            f"  3. Azure への認証が完了していること (例: az login)\n"
+            f"{error_msg}\n\n"
+            f"詳細情報:\n"
+            f"  - コマンド: {settings.mcp_command} {' '.join(settings.mcp_args)}\n"
+            f"  - エラー: {e}\n"
         ) from e
 
 

@@ -6,8 +6,10 @@ This module manages configuration for:
 - Agent behavior settings
 """
 
+from __future__ import annotations
+
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -23,22 +25,17 @@ class Settings:
     
     # Azure MCP Server Settings
     mcp_command: str = "npx"
-    mcp_args: list[str] = None
+    mcp_args: list[str] = field(default_factory=lambda: [
+        "-y",
+        "@azure/mcp@latest",
+        "server",
+        "start",
+        "--read-only"
+    ])
     
     # Agent Settings
     max_completion_tokens: int = 4096
     temperature: float = 0.7
-    
-    def __post_init__(self):
-        """Set default MCP args if not provided"""
-        if self.mcp_args is None:
-            self.mcp_args = [
-                "-y",
-                "@azure/mcp@latest",
-                "server",
-                "start",
-                "--read-only"
-            ]
 
 
 def get_settings() -> Settings:

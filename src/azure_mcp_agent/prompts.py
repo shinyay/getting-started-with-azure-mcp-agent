@@ -74,8 +74,16 @@ def get_error_message(error_type: str, **kwargs) -> str:
     Returns:
         str: Formatted error message in Japanese
     """
-    template = ERROR_MESSAGES.get(error_type, ERROR_MESSAGES["unknown_error"])
-    return template.format(**kwargs)
+    if error_type in ERROR_MESSAGES:
+        template = ERROR_MESSAGES[error_type]
+        return template.format(**kwargs)
+    else:
+        template = ERROR_MESSAGES["unknown_error"]
+        # Provide a default value for 'error' if not present
+        if 'error' not in kwargs:
+            kwargs = dict(kwargs)  # avoid mutating caller's dict
+            kwargs['error'] = error_type
+        return template.format(**kwargs)
 
 
 def get_success_message(message_type: str, **kwargs) -> str:
@@ -87,6 +95,11 @@ def get_success_message(message_type: str, **kwargs) -> str:
         
     Returns:
         str: Formatted success message in Japanese
+        
+    Raises:
+        KeyError: If an unknown message type is provided
     """
-    template = SUCCESS_MESSAGES.get(message_type, "")
+    if message_type not in SUCCESS_MESSAGES:
+        raise KeyError(f"Unknown success message type: {message_type!r}")
+    template = SUCCESS_MESSAGES[message_type]
     return template.format(**kwargs)

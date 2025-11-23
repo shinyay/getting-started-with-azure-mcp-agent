@@ -6,11 +6,9 @@ to Azure resources via Azure MCP Server.
 
 import asyncio
 import sys
-from typing import Optional
 
 from .agent import create_agent
 from .config import get_settings, validate_mcp_server_available
-from .prompts import get_error_message
 
 
 def print_banner():
