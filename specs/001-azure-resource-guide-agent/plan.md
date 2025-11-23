@@ -1,7 +1,7 @@
-# Implementation Plan: [FEATURE]
+# Implementation Plan: Azure Resource Guide Agent
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+**Branch**: `001-azure-resource-guide-agent` | **Date**: 2025-11-23 | **Spec**: `specs/001-azure-resource-guide-agent/spec.md`
+**Input**: Feature specification from `specs/001-azure-resource-guide-agent/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
