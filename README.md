@@ -37,7 +37,7 @@ cd getting-started-with-azure-mcp-agent
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows の場合: .venv\Scripts\activate
-pip install -e .
+pip install -e ".[dev]"
 ```
 
 ## Usage
@@ -51,9 +51,9 @@ npx -y @azure/mcp@latest server start
 2. エージェントを起動:
 
 ```bash
-python -m azure_mcp_agent
-# または
 azure-mcp-agent
+# または
+python -m azure_mcp_agent
 ```
 
 3. 日本語で問い合わせを行う:
