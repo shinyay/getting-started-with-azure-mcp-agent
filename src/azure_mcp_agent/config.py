@@ -104,12 +104,16 @@ def get_settings() -> Settings:
     return Settings(**settings_kwargs)
 
 
-def validate_mcp_server_available() -> bool:
+def validate_mcp_server_available(settings: Optional[Settings] = None) -> bool:
     """Check if Azure MCP Server command is available
+    
+    Args:
+        settings: Pre-loaded settings object. If None, settings will be loaded from environment.
     
     Returns:
         bool: True if MCP server command is available
     """
     import shutil
-    settings = get_settings()
+    if settings is None:
+        settings = get_settings()
     return shutil.which(settings.mcp_command) is not None

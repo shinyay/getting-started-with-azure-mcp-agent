@@ -4,6 +4,8 @@ This module provides the ChatAgent implementation using Microsoft Agent Framewor
 The agent connects to Azure MCP Server for read-only Azure resource queries.
 """
 
+from __future__ import annotations
+
 import asyncio
 from typing import Optional
 

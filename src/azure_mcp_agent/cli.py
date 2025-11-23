@@ -40,7 +40,7 @@ async def run_interactive_session() -> int:
         settings = get_settings()
         
         # Check if MCP server command is available
-        if not validate_mcp_server_available():
+        if not validate_mcp_server_available(settings):
             print(f"警告: MCP サーバーコマンド '{settings.mcp_command}' が見つかりません。")
             print(f"Node.js / npm がインストールされていることを確認してください。")
             print()
