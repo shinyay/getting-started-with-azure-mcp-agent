@@ -33,7 +33,7 @@ def print_banner():
     print()
 
 
-async def run_interactive_session():
+async def run_interactive_session() -> int:
     """Run an interactive REPL session with the agent"""
     try:
         # Load settings and validate
@@ -96,7 +96,7 @@ async def run_interactive_session():
     return 0
 
 
-def main():
+def main() -> int:
     """Main CLI entry point"""
     print_banner()
     

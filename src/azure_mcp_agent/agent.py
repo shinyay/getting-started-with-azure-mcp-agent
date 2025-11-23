@@ -36,6 +36,7 @@ async def create_agent(settings: Optional[Settings] = None) -> ChatAgent:
     openai_client = AsyncOpenAI(
         base_url=settings.api_base,
         api_key=settings.api_key,
+        default_query={"api-version": settings.api_version} if settings.api_version else None,
     )
     
     # Create chat client
