@@ -41,7 +41,7 @@ async def create_agent(settings: Optional[Settings] = None) -> ChatAgent:
     # Create chat client
     chat_client = OpenAIChatClient(
         async_client=openai_client,
-        model=settings.model_name,
+        model_id=settings.model_name,
     )
     
     # Create MCP tool for Azure resource access
