@@ -88,16 +88,20 @@ def get_settings() -> Settings:
     max_tokens = int(os.getenv("MAX_COMPLETION_TOKENS", "4096"))
     temperature = float(os.getenv("TEMPERATURE", "0.7"))
     
-    return Settings(
+    # Build settings kwargs, only include mcp_args if explicitly set
+    settings_kwargs = dict(
         model_name=model_name,
         api_base=api_base,
         api_key=api_key,
         api_version=api_version,
         mcp_command=mcp_command,
-        mcp_args=mcp_args,
         max_completion_tokens=max_tokens,
         temperature=temperature,
     )
+    if mcp_args is not None:
+        settings_kwargs["mcp_args"] = mcp_args
+    
+    return Settings(**settings_kwargs)
 
 
 def validate_mcp_server_available() -> bool:

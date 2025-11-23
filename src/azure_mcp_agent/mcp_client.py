@@ -31,10 +31,11 @@ def create_azure_mcp_tool(settings: Settings) -> MCPStdioTool:
         return tool
     except Exception as e:
         error_msg = get_error_message("mcp_connection_error")
+        args_str = ' '.join(settings.mcp_args) if settings.mcp_args else ''
         raise RuntimeError(
             f"{error_msg}\n\n"
             f"詳細情報:\n"
-            f"  - コマンド: {settings.mcp_command} {' '.join(settings.mcp_args)}\n"
+            f"  - コマンド: {settings.mcp_command} {args_str}\n"
             f"  - エラー: {e}\n"
         ) from e
 
