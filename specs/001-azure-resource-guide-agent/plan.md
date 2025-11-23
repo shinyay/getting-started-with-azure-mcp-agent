@@ -7,7 +7,15 @@
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+このプランでは、Azure MCP Server を通じて Azure サブスクリプション内のリソース情報
+（リソースグループ、ストレージアカウント、Log Analytics のエラー概要）を
+日本語で問い合わせ・要約できる CLI ベースの AI エージェントを実装する。
+
+実装は Python 3.10 + Microsoft Agent Framework(Python) を用い、
+LLM には GitHub Models の gpt-4o / gpt-4.1 を利用する。
+初期バージョンでは Azure リソースに対して完全に読み取り専用とし、
+将来的に Web UI からも利用できるような構成を前提とする。
+
 
 ## Technical Context
 
