@@ -1,8 +1,8 @@
 # Feature Specification: Azure Resource Guide Agent
 
-**Feature Branch**: `001-azure-resource-guide-agent`  
-**Created**: 2025-11-23  
-**Status**: Draft  
+**Feature Branch**: `001-azure-resource-guide-agent`
+**Created**: 2025-11-23
+**Status**: Draft
 **Input**: User description: "プロダクト名: Azure Resource Guide Agent / 目的: Azure MCP Server を経由して Azure サブスクリプション内のリソースを自然言語で調査できるようにする / 主なユーザー: Azure を扱うアプリ開発者・SRE・インフラ担当 / 主なユースケース: サブスクリプション内のリソースグループ一覧、特定リソースグループ内のストレージアカウント一覧、Log Analytics を使ったエラー調査 / 制約: 初期バージョンは読み取り専用、日本語対話、リソース名や ID は原文のまま表示 / 将来拡張: 次にやるべきトラブルシュートガイドの提案"
 
 ## User Scenarios & Testing *(mandatory)*
@@ -11,7 +11,7 @@
   IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
   Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
   you should still have a viable MVP (Minimum Viable Product) that delivers value.
-  
+
   Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
   Think of each story as a standalone slice of functionality that can be:
   - Developed independently
@@ -93,7 +93,7 @@ Azure を扱う SRE / インフラ担当として、対象サブスクリプシ�
 
 *Example of marking unclear requirements:*
 
-- **FR-008**: System MUST provide high-level troubleshooting guidance such as 「次に実行すべき確認手順」や「よくある原因候補」の提案を行うが、その詳細な粒度やガイドの長さは [NEEDS CLARIFICATION: トラブルシュートガイドをどの程度の詳細さ・自動度で提供するか]。
+- **FR-008**: System MUST provide high-level troubleshooting guidance as 3〜5 ステップ程度の簡潔なガイド（代表的な原因候補の列挙と、「次に実行すべき確認手順」を箇条書きで示すレベル）を提示し、詳細な手順書レベルの長文ガイドや個別環境に依存する細かな操作指示までは含めない。
 
 ### Key Entities *(include if feature involves data)*
 
