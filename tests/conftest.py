@@ -10,7 +10,7 @@ src_path = repo_root / "src"
 # Remove any tests paths that might interfere
 paths_to_remove = [
     p for p in sys.path
-    if p.endswith("tests/azure_mcp_agent") or tuple(Path(p).parts[-2:]) == ("tests", "azure_mcp_agent")
+    if p.endswith("tests/azure_mcp_agent") or (len(Path(p).parts) >= 2 and tuple(Path(p).parts[-2:]) == ("tests", "azure_mcp_agent"))
 ]
 for p in paths_to_remove:
     sys.path.remove(p)
