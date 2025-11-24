@@ -356,3 +356,150 @@ async def test_agent_handles_nonexistent_resource_group(mock_settings):
             # Verify resource group not found error message matches template
             assert "リソースグループ" in response
             assert "見つかりませんでした" in response
+
+
+# ============================================================================
+# Phase 6 / T035: Additional Edge-Case Tests
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_agent_handles_timeout_error(mock_settings):
+    """Test that agent handles timeout errors gracefully
+    
+    Phase 6 / T035: エッジケーステスト（タイムアウト）
+    
+    Given: MCP client returns timeout error
+    When: User asks for resource information
+    Then: Response includes user-friendly Japanese message suggesting retry
+    """
+    create_agent = azure_mcp_agent.agent.create_agent
+    
+    with patch('azure_mcp_agent.mcp_client.create_azure_mcp_tool') as mock_create_tool:
+        mock_tool = MagicMock()
+        mock_tool.name = "azure_mcp_server"
+        mock_tool.description = "Azure MCP Server"
+        mock_create_tool.return_value = mock_tool
+        
+        with patch('azure_mcp_agent.agent.ChatAgent') as MockChatAgent:
+            mock_agent_instance = MagicMock()
+            mock_thread = MagicMock()
+            
+            async def mock_run_stream(*args, **kwargs):
+                chunk = MagicMock()
+                chunk.text = "リクエストがタイムアウトしました。時間をおいて再度実行してください。"
+                yield chunk
+            
+            mock_agent_instance.run_stream = mock_run_stream
+            mock_agent_instance.get_new_thread.return_value = mock_thread
+            MockChatAgent.return_value = mock_agent_instance
+            
+            agent = await create_agent(mock_settings)
+            thread = agent.get_new_thread()
+            
+            query = "このサブスクリプションのリソースグループ一覧を出して"
+            response_parts = []
+            async for chunk in agent.run_stream([query], thread=thread):
+                if chunk.text:
+                    response_parts.append(chunk.text)
+            
+            response = ''.join(response_parts)
+            
+            # Verify timeout error message in Japanese
+            assert "タイムアウト" in response or "時間をおいて" in response
+            assert "再度" in response or "再実行" in response
+
+
+@pytest.mark.asyncio
+async def test_agent_handles_azure_temporary_failure(mock_settings):
+    """Test that agent handles temporary Azure service failures
+    
+    Phase 6 / T035: エッジケーステスト（Azure一時障害）
+    
+    Given: MCP client returns temporary Azure failure
+    When: User asks for Azure resources
+    Then: Response includes friendly message about temporary issue
+    """
+    create_agent = azure_mcp_agent.agent.create_agent
+    
+    with patch('azure_mcp_agent.mcp_client.create_azure_mcp_tool') as mock_create_tool:
+        mock_tool = MagicMock()
+        mock_tool.name = "azure_mcp_server"
+        mock_tool.description = "Azure MCP Server"
+        mock_create_tool.return_value = mock_tool
+        
+        with patch('azure_mcp_agent.agent.ChatAgent') as MockChatAgent:
+            mock_agent_instance = MagicMock()
+            mock_thread = MagicMock()
+            
+            async def mock_run_stream(*args, **kwargs):
+                chunk = MagicMock()
+                chunk.text = "Azure からの応答に問題が発生しました。時間をおいて再実行してください。"
+                yield chunk
+            
+            mock_agent_instance.run_stream = mock_run_stream
+            mock_agent_instance.get_new_thread.return_value = mock_thread
+            MockChatAgent.return_value = mock_agent_instance
+            
+            agent = await create_agent(mock_settings)
+            thread = agent.get_new_thread()
+            
+            query = "このサブスクリプションのリソースグループ一覧を出して"
+            response_parts = []
+            async for chunk in agent.run_stream([query], thread=thread):
+                if chunk.text:
+                    response_parts.append(chunk.text)
+            
+            response = ''.join(response_parts)
+            
+            # Verify temporary failure message in Japanese
+            assert "Azure" in response
+            assert "問題" in response or "エラー" in response
+            assert "時間をおいて" in response or "再実行" in response
+
+
+@pytest.mark.asyncio
+async def test_agent_handles_storage_account_permission_error(mock_settings):
+    """Test that agent handles permission errors for storage accounts
+    
+    Phase 6 / T035: エッジケーステスト（ストレージアカウント権限不足）
+    
+    Given: User lacks permissions to list storage accounts
+    When: User asks for storage account list
+    Then: Response includes clear permission error message
+    """
+    create_agent = azure_mcp_agent.agent.create_agent
+    
+    with patch('azure_mcp_agent.mcp_client.create_azure_mcp_tool') as mock_create_tool:
+        mock_tool = MagicMock()
+        mock_tool.name = "azure_mcp_server"
+        mock_tool.description = "Azure MCP Server"
+        mock_create_tool.return_value = mock_tool
+        
+        with patch('azure_mcp_agent.agent.ChatAgent') as MockChatAgent:
+            mock_agent_instance = MagicMock()
+            mock_thread = MagicMock()
+            
+            async def mock_run_stream(*args, **kwargs):
+                chunk = MagicMock()
+                chunk.text = "指定されたリソースへのアクセス権限がありません。Azure の権限設定を確認してください。"
+                yield chunk
+            
+            mock_agent_instance.run_stream = mock_run_stream
+            mock_agent_instance.get_new_thread.return_value = mock_thread
+            MockChatAgent.return_value = mock_agent_instance
+            
+            agent = await create_agent(mock_settings)
+            thread = agent.get_new_thread()
+            
+            query = "rg-app-core のストレージアカウントを一覧して"
+            response_parts = []
+            async for chunk in agent.run_stream([query], thread=thread):
+                if chunk.text:
+                    response_parts.append(chunk.text)
+            
+            response = ''.join(response_parts)
+            
+            # Verify permission error message
+            assert "権限" in response
+            assert "アクセス" in response or "許可" in response

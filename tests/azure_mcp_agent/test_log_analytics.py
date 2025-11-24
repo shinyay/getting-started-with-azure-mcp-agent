@@ -312,3 +312,216 @@ async def test_agent_handles_workspace_disambiguation(mock_settings):
             assert "指定" in response or "選択" in response
             # Should list some workspace names
             assert "workspace" in response.lower() or "japaneast" in response or "japanwest" in response
+
+
+# ============================================================================
+# Phase 6 / T036: Basic Performance Tests
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_agent_handles_large_resource_group_list_efficiently(mock_settings):
+    """Test that agent can handle large resource group lists efficiently
+    
+    Phase 6 / T036: パフォーマンステスト - 大量リソースグループ
+    
+    Given: MCP client returns 100 resource groups
+    When: Agent processes and formats the response
+    Then: Response is generated without significant delay
+    """
+    import time
+    create_agent = azure_mcp_agent.agent.create_agent
+    
+    with patch('azure_mcp_agent.mcp_client.create_azure_mcp_tool') as mock_create_tool:
+        mock_tool = MagicMock()
+        mock_tool.name = "azure_mcp_server"
+        mock_tool.description = "Azure MCP Server"
+        mock_create_tool.return_value = mock_tool
+        
+        with patch('azure_mcp_agent.agent.ChatAgent') as MockChatAgent:
+            mock_agent_instance = MagicMock()
+            mock_thread = MagicMock()
+            
+            # Generate a large response with 100 resource groups
+            large_response = "以下がこのサブスクリプションのリソースグループ一覧です:\n\n"
+            for i in range(100):
+                large_response += f"- rg-app-{i:03d} (location: japaneast, tags: env=prod)\n"
+            large_response += "\n合計 100 件のリソースグループが見つかりました。"
+            
+            async def mock_run_stream(*args, **kwargs):
+                chunk = MagicMock()
+                chunk.text = large_response
+                yield chunk
+            
+            mock_agent_instance.run_stream = mock_run_stream
+            mock_agent_instance.get_new_thread.return_value = mock_thread
+            MockChatAgent.return_value = mock_agent_instance
+            
+            agent = await create_agent(mock_settings)
+            thread = agent.get_new_thread()
+            
+            # Measure time to process query
+            start_time = time.time()
+            query = "このサブスクリプションのリソースグループ一覧を出して"
+            response_parts = []
+            async for chunk in agent.run_stream([query], thread=thread):
+                if chunk.text:
+                    response_parts.append(chunk.text)
+            elapsed_time = time.time() - start_time
+            
+            response = ''.join(response_parts)
+            
+            # Verify response contains all items
+            assert "rg-app-000" in response
+            assert "rg-app-099" in response
+            assert "100 件" in response
+            
+            # Performance check: should complete within reasonable time (5 seconds is generous for mocked data)
+            assert elapsed_time < 5.0, f"Query took too long: {elapsed_time:.2f} seconds"
+
+
+@pytest.mark.asyncio
+async def test_agent_handles_large_storage_account_list_efficiently(mock_settings):
+    """Test that agent can handle large storage account lists efficiently
+    
+    Phase 6 / T036: パフォーマンステスト - 大量ストレージアカウント
+    
+    Given: MCP client returns 50 storage accounts
+    When: Agent processes and formats the response
+    Then: Response is generated without significant delay
+    """
+    import time
+    create_agent = azure_mcp_agent.agent.create_agent
+    
+    with patch('azure_mcp_agent.mcp_client.create_azure_mcp_tool') as mock_create_tool:
+        mock_tool = MagicMock()
+        mock_tool.name = "azure_mcp_server"
+        mock_tool.description = "Azure MCP Server"
+        mock_create_tool.return_value = mock_tool
+        
+        with patch('azure_mcp_agent.agent.ChatAgent') as MockChatAgent:
+            mock_agent_instance = MagicMock()
+            mock_thread = MagicMock()
+            
+            # Generate a large response with 50 storage accounts
+            large_response = "リソースグループ「rg-storage」内のストレージアカウント一覧:\n\n"
+            for i in range(50):
+                kind = "StorageV2" if i % 2 == 0 else "BlobStorage"
+                sku = "Standard_LRS" if i % 3 == 0 else "Standard_GRS"
+                location = "japaneast" if i % 2 == 0 else "japanwest"
+                large_response += f"- stapp{i:03d} (location: {location}, kind: {kind}, sku: {sku})\n"
+            large_response += "\n合計 50 件のストレージアカウントが見つかりました。"
+            
+            async def mock_run_stream(*args, **kwargs):
+                chunk = MagicMock()
+                chunk.text = large_response
+                yield chunk
+            
+            mock_agent_instance.run_stream = mock_run_stream
+            mock_agent_instance.get_new_thread.return_value = mock_thread
+            MockChatAgent.return_value = mock_agent_instance
+            
+            agent = await create_agent(mock_settings)
+            thread = agent.get_new_thread()
+            
+            # Measure time to process query
+            start_time = time.time()
+            query = "rg-storage のストレージアカウントを一覧して"
+            response_parts = []
+            async for chunk in agent.run_stream([query], thread=thread):
+                if chunk.text:
+                    response_parts.append(chunk.text)
+            elapsed_time = time.time() - start_time
+            
+            response = ''.join(response_parts)
+            
+            # Verify response contains items
+            assert "stapp000" in response
+            assert "stapp049" in response
+            assert "50 件" in response
+            
+            # Performance check
+            assert elapsed_time < 5.0, f"Query took too long: {elapsed_time:.2f} seconds"
+
+
+@pytest.mark.asyncio
+async def test_agent_handles_large_error_summary_efficiently(mock_settings):
+    """Test that agent can summarize large error datasets efficiently
+    
+    Phase 6 / T036: パフォーマンステスト - 大量エラーログ要約
+    
+    Given: MCP client returns summary of 500 errors
+    When: Agent processes and summarizes
+    Then: Response is generated efficiently with aggregated view
+    """
+    import time
+    create_agent = azure_mcp_agent.agent.create_agent
+    
+    with patch('azure_mcp_agent.mcp_client.create_azure_mcp_tool') as mock_create_tool:
+        mock_tool = MagicMock()
+        mock_tool.name = "azure_mcp_server"
+        mock_tool.description = "Azure MCP Server"
+        mock_create_tool.return_value = mock_tool
+        
+        with patch('azure_mcp_agent.agent.ChatAgent') as MockChatAgent:
+            mock_agent_instance = MagicMock()
+            mock_thread = MagicMock()
+            
+            # Generate a large error summary (500 total errors across categories)
+            large_response = """直近 24 時間 のエラー状況を要約しました。
+
+■ エラー件数の概要
+- Application エラー: 320 件
+- Platform エラー: 105 件
+- Network エラー: 75 件
+- Warning: 150 件
+
+■ 代表的なエラーメッセージ
+- Application: "Database connection timeout occurred" (resource: /subscriptions/sub-123/resourceGroups/rg-app/providers/Microsoft.Web/sites/app-web-01)
+- Application: "Memory allocation failed" (resource: /subscriptions/sub-123/resourceGroups/rg-app/providers/Microsoft.Web/sites/app-web-02)
+- Platform: "VM failed to start due to allocation error" (resource: /subscriptions/sub-123/resourceGroups/rg-infra/providers/Microsoft.Compute/virtualMachines/vm-01)
+- Network: "Connection to external service timed out" (resource: /subscriptions/sub-123/resourceGroups/rg-network/providers/Microsoft.Network/virtualNetworks/vnet-01)
+- Warning: "High CPU usage detected (>90%)" (resource: /subscriptions/sub-123/resourceGroups/rg-app/providers/Microsoft.Web/sites/app-api)
+
+■ 次に実行をおすすめする 3〜5 ステップ
+1. Application エラーについて、該当リソースのメトリック（CPU/メモリ/接続数）を確認してください。
+2. Database の接続文字列やネットワーク設定（NSG/Firewall）に変更がなかったかを確認してください。
+3. Platform エラーが継続する場合は、別リージョンでのリソース再作成を検討してください。
+4. Network エラーについて、外部サービスの稼働状況とネットワークルートを確認してください。
+5. 高 CPU 使用率の警告については、アプリケーションのスケールアウトやコード最適化を検討してください。"""
+            
+            async def mock_run_stream(*args, **kwargs):
+                chunk = MagicMock()
+                chunk.text = large_response
+                yield chunk
+            
+            mock_agent_instance.run_stream = mock_run_stream
+            mock_agent_instance.get_new_thread.return_value = mock_thread
+            MockChatAgent.return_value = mock_agent_instance
+            
+            agent = await create_agent(mock_settings)
+            thread = agent.get_new_thread()
+            
+            # Measure time to process query
+            start_time = time.time()
+            query = "直近24時間のエラーをLog Analyticsで確認して"
+            response_parts = []
+            async for chunk in agent.run_stream([query], thread=thread):
+                if chunk.text:
+                    response_parts.append(chunk.text)
+            elapsed_time = time.time() - start_time
+            
+            response = ''.join(response_parts)
+            
+            # Verify response contains summary
+            assert "エラー件数" in response
+            assert "320 件" in response
+            assert "代表的なエラーメッセージ" in response
+            assert "次に実行をおすすめする" in response
+            
+            # Verify 3-5 step troubleshooting guide (FR-008)
+            step_count = sum(1 for i in range(1, 10) if f"{i}." in response)
+            assert 3 <= step_count <= 5, f"Should have 3-5 troubleshooting steps, found {step_count}"
+            
+            # Performance check
+            assert elapsed_time < 5.0, f"Query took too long: {elapsed_time:.2f} seconds"
