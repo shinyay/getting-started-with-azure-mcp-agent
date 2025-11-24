@@ -114,8 +114,8 @@ async def test_agent_summarizes_log_analytics_errors_with_multiple_severities(mo
             # Verify troubleshooting guide (FR-008: 3-5 steps)
             assert "次に実行をおすすめする" in response or "ステップ" in response, "Response should contain troubleshooting guide"
             assert "1." in response and "2." in response and "3." in response, "Response should have numbered steps"
-            # Verify we have at least 3 steps
-            step_count = len(re.findall(r'\n\d+\.\s+', response))
+            # Verify we have at least 3 steps (matches steps at line start or after newline)
+            step_count = len(re.findall(r'(?:^|\n)\d+\.\s+', response, re.MULTILINE))
             assert 3 <= step_count <= 5, f"Should have 3-5 troubleshooting steps, found {step_count}"
 
 
@@ -519,7 +519,7 @@ async def test_agent_handles_large_error_summary_efficiently(mock_settings):
             assert "次に実行をおすすめする" in response
             
             # Verify 3-5 step troubleshooting guide (FR-008)
-            step_count = len(re.findall(r'\n\d+\.\s+', response))
+            step_count = len(re.findall(r'(?:^|\n)\d+\.\s+', response, re.MULTILINE))
             assert 3 <= step_count <= 5, f"Should have 3-5 troubleshooting steps, found {step_count}"
             
             # Performance check
