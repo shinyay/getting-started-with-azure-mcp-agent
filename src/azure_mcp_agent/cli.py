@@ -139,7 +139,12 @@ def _setup_logging():
     """Setup logging configuration for the application"""
     # Get log level from environment variable, default to INFO
     log_level_str = os.environ.get("AZURE_MCP_AGENT_LOG_LEVEL", "INFO").upper()
-    log_level = getattr(logging, log_level_str, logging.INFO)
+    valid_levels = {'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}
+    if log_level_str not in valid_levels:
+        print(f"警告: 無効なログレベル '{log_level_str}'。INFO を使用します。", file=sys.stderr)
+        log_level = logging.INFO
+    else:
+        log_level = getattr(logging, log_level_str)
     
     # Configure root logger
     logging.basicConfig(
@@ -174,10 +179,6 @@ def main() -> int:
         exit_code = asyncio.run(run_interactive_session())
         logger.info(f"CLI が終了しました (exit code: {exit_code})")
         return exit_code
-    except KeyboardInterrupt:
-        logger.info("KeyboardInterrupt により終了します")
-        print("\n\n中断されました。エージェントを終了します。")
-        return 0
     except Exception as e:
         logger.error(f"main() での予期しないエラー: {e}", exc_info=True)
         print(f"\nエラー: 予期しないエラーが発生しました。", file=sys.stderr)
