@@ -212,7 +212,8 @@ def test_cli_main_function_exists():
         mock_asyncio_run.return_value = 0
         
         with patch('azure_mcp_agent.cli.print_banner'):
-            main()
+            result = main()
             
-            # Verify asyncio.run was called
+            # Verify asyncio.run was called and result is correct
             assert mock_asyncio_run.called
+            assert result == 0
