@@ -20,6 +20,13 @@ from unittest.mock import MagicMock, patch
 import azure_mcp_agent.agent
 import azure_mcp_agent.mcp_client
 
+# Import shared test response templates
+from tests.conftest import (
+    MOCK_STORAGE_ACCOUNTS_RESPONSE,
+    MOCK_EMPTY_STORAGE_ACCOUNTS_RESPONSE,
+    MOCK_RESOURCE_GROUP_NOT_FOUND_RESPONSE,
+)
+
 
 @pytest.fixture
 def mock_settings():
@@ -192,3 +199,160 @@ async def test_agent_handles_permission_errors(mock_settings):
             # Verify permission error message in Japanese
             assert "権限" in response
             assert "アクセス" in response or "不足" in response
+
+
+# ============================================================================
+# User Story 2: Storage Account Listing Tests
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_agent_lists_storage_accounts_in_resource_group(mock_settings):
+    """Test that agent can list storage accounts in a specific resource group
+    
+    User Story 2 / T019: Agent レベルのテスト - ストレージアカウント一覧
+    
+    Given: MCP client returns test storage account data for a specific RG
+    When: User asks "<RG名> のストレージアカウントを一覧して"
+    Then: Response includes all storage account names, locations, kinds, and SKUs
+    """
+    create_agent = azure_mcp_agent.agent.create_agent
+    
+    with patch('azure_mcp_agent.mcp_client.create_azure_mcp_tool') as mock_create_tool:
+        mock_tool = MagicMock()
+        mock_tool.name = "azure_mcp_server"
+        mock_tool.description = "Azure MCP Server"
+        mock_create_tool.return_value = mock_tool
+        
+        with patch('azure_mcp_agent.agent.ChatAgent') as MockChatAgent:
+            mock_agent_instance = MagicMock()
+            mock_thread = MagicMock()
+            
+            async def mock_run_stream(*args, **kwargs):
+                """Simulate streaming response with storage account data"""
+                response_text = MOCK_STORAGE_ACCOUNTS_RESPONSE.format(rg_name="rg-app-core")
+                
+                chunk = MagicMock()
+                chunk.text = response_text
+                yield chunk
+            
+            mock_agent_instance.run_stream = mock_run_stream
+            mock_agent_instance.get_new_thread.return_value = mock_thread
+            MockChatAgent.return_value = mock_agent_instance
+            
+            agent = await create_agent(mock_settings)
+            thread = agent.get_new_thread()
+            
+            query = "rg-app-core のストレージアカウントを一覧して"
+            response_parts = []
+            async for chunk in agent.run_stream([query], thread=thread):
+                if chunk.text:
+                    response_parts.append(chunk.text)
+            
+            response = ''.join(response_parts)
+            
+            # Verify response contains expected content
+            assert "stappcore001" in response, "Response should contain storage account name"
+            assert "stappcore002" in response, "Response should contain storage account name"
+            assert "stappcorelogs" in response, "Response should contain storage account name"
+            assert "japaneast" in response, "Response should contain location"
+            assert "japanwest" in response, "Response should contain location"
+            assert "StorageV2" in response, "Response should contain kind"
+            assert "BlobStorage" in response, "Response should contain kind"
+            assert "Standard_LRS" in response, "Response should contain SKU"
+            assert "Standard_GRS" in response, "Response should contain SKU"
+            assert "ストレージアカウント" in response, "Response should be in Japanese"
+
+
+@pytest.mark.asyncio
+async def test_agent_handles_empty_storage_accounts(mock_settings):
+    """Test that agent handles resource groups with no storage accounts
+    
+    User Story 2 / T019: エッジケーステスト（空のストレージアカウント）
+    
+    Given: MCP client returns empty storage account list for a specific RG
+    When: User asks for storage account list
+    Then: Response includes friendly Japanese message indicating no storage accounts found
+    """
+    create_agent = azure_mcp_agent.agent.create_agent
+    
+    with patch('azure_mcp_agent.mcp_client.create_azure_mcp_tool') as mock_create_tool:
+        mock_tool = MagicMock()
+        mock_tool.name = "azure_mcp_server"
+        mock_tool.description = "Azure MCP Server"
+        mock_create_tool.return_value = mock_tool
+        
+        with patch('azure_mcp_agent.agent.ChatAgent') as MockChatAgent:
+            mock_agent_instance = MagicMock()
+            mock_thread = MagicMock()
+            
+            async def mock_run_stream(*args, **kwargs):
+                chunk = MagicMock()
+                chunk.text = MOCK_EMPTY_STORAGE_ACCOUNTS_RESPONSE.format(rg_name="rg-empty")
+                yield chunk
+            
+            mock_agent_instance.run_stream = mock_run_stream
+            mock_agent_instance.get_new_thread.return_value = mock_thread
+            MockChatAgent.return_value = mock_agent_instance
+            
+            agent = await create_agent(mock_settings)
+            thread = agent.get_new_thread()
+            
+            query = "rg-empty のストレージアカウントを一覧して"
+            response_parts = []
+            async for chunk in agent.run_stream([query], thread=thread):
+                if chunk.text:
+                    response_parts.append(chunk.text)
+            
+            response = ''.join(response_parts)
+            
+            # Verify friendly Japanese message matches template
+            assert "ストレージアカウント" in response
+            assert "見つかりませんでした" in response
+
+
+@pytest.mark.asyncio
+async def test_agent_handles_nonexistent_resource_group(mock_settings):
+    """Test that agent handles non-existent resource group names
+    
+    User Story 2 / T019: エッジケーステスト（存在しないリソースグループ）
+    
+    Given: MCP client returns error for non-existent resource group
+    When: User asks for storage accounts in a non-existent RG
+    Then: Response includes clear Japanese error message about RG not found
+    """
+    create_agent = azure_mcp_agent.agent.create_agent
+    
+    with patch('azure_mcp_agent.mcp_client.create_azure_mcp_tool') as mock_create_tool:
+        mock_tool = MagicMock()
+        mock_tool.name = "azure_mcp_server"
+        mock_tool.description = "Azure MCP Server"
+        mock_create_tool.return_value = mock_tool
+        
+        with patch('azure_mcp_agent.agent.ChatAgent') as MockChatAgent:
+            mock_agent_instance = MagicMock()
+            mock_thread = MagicMock()
+            
+            async def mock_run_stream(*args, **kwargs):
+                chunk = MagicMock()
+                chunk.text = MOCK_RESOURCE_GROUP_NOT_FOUND_RESPONSE.format(rg_name="rg-not-exist")
+                yield chunk
+            
+            mock_agent_instance.run_stream = mock_run_stream
+            mock_agent_instance.get_new_thread.return_value = mock_thread
+            MockChatAgent.return_value = mock_agent_instance
+            
+            agent = await create_agent(mock_settings)
+            thread = agent.get_new_thread()
+            
+            query = "rg-not-exist のストレージアカウントを一覧して"
+            response_parts = []
+            async for chunk in agent.run_stream([query], thread=thread):
+                if chunk.text:
+                    response_parts.append(chunk.text)
+            
+            response = ''.join(response_parts)
+            
+            # Verify resource group not found error message matches template
+            assert "リソースグループ" in response
+            assert "見つかりませんでした" in response

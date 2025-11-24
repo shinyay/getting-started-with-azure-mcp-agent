@@ -20,6 +20,13 @@ from io import StringIO
 # Import CLI module
 import azure_mcp_agent.cli
 
+# Import shared test response templates
+from tests.conftest import (
+    MOCK_STORAGE_ACCOUNTS_RESPONSE,
+    MOCK_EMPTY_STORAGE_ACCOUNTS_RESPONSE,
+    MOCK_RESOURCE_GROUP_NOT_FOUND_RESPONSE,
+)
+
 
 @pytest.fixture
 def mock_cli_settings():
@@ -217,3 +224,166 @@ def test_cli_main_function_exists():
             # Verify asyncio.run was called and result is correct
             assert mock_asyncio_run.called
             assert result == 0
+
+
+# ============================================================================
+# User Story 2: Storage Account Listing CLI Tests
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_cli_lists_storage_accounts_in_resource_group(mock_cli_settings):
+    """Test CLI flow for storage account listing query with resource group
+    
+    User Story 2 / T020: CLI レベルのテスト - ストレージアカウント一覧
+    
+    Given: CLI is running with mocked agent
+    When: User enters "<RG名> のストレージアカウントを一覧して"
+    Then: CLI displays storage account names, locations, kinds, and SKUs without errors
+    """
+    run_interactive_session = azure_mcp_agent.cli.run_interactive_session
+    
+    # Mock agent response using shared template
+    expected_storage_output = MOCK_STORAGE_ACCOUNTS_RESPONSE.format(rg_name="rg-test")
+    
+    with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
+         patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
+         patch('azure_mcp_agent.cli.create_agent', new_callable=AsyncMock) as mock_create_agent, \
+         patch('builtins.input') as mock_input, \
+         patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+        
+        # Setup mocks
+        mock_get_settings.return_value = mock_cli_settings
+        mock_validate.return_value = True
+        
+        # Mock agent
+        mock_agent = MagicMock()
+        mock_thread = MagicMock()
+        mock_agent.get_new_thread.return_value = mock_thread
+        
+        # Mock streaming response
+        async def mock_run_stream(messages, thread):
+            chunk = MagicMock()
+            chunk.text = expected_storage_output
+            yield chunk
+        
+        mock_agent.run_stream = mock_run_stream
+        mock_create_agent.return_value = mock_agent
+        
+        # Mock user input (query, then exit)
+        mock_input.side_effect = [
+            "rg-test のストレージアカウントを一覧して",
+            "exit"
+        ]
+        
+        # Run CLI session
+        exit_code = await run_interactive_session()
+        
+        # Verify successful execution
+        assert exit_code == 0, "CLI should exit successfully"
+        
+        # Verify output contains expected content
+        output = mock_stdout.getvalue()
+        assert "stappcore001" in output, "Expected storage account name in output"
+        assert "StorageV2" in output, "Expected kind in output"
+        assert "Standard_LRS" in output, "Expected SKU in output"
+        
+        # Verify no traceback or error messages
+        assert "Traceback" not in output
+        assert "Error" not in output and "エラー" not in output
+
+
+@pytest.mark.asyncio
+async def test_cli_handles_nonexistent_resource_group_for_storage(mock_cli_settings):
+    """Test that CLI handles storage account queries for non-existent resource groups
+    
+    User Story 2 / T020: エッジケーステスト
+    
+    Given: CLI is running
+    When: User asks for storage accounts in a non-existent RG
+    Then: CLI displays clear error message in Japanese
+    """
+    run_interactive_session = azure_mcp_agent.cli.run_interactive_session
+    
+    error_response = MOCK_RESOURCE_GROUP_NOT_FOUND_RESPONSE.format(rg_name="rg-invalid")
+    
+    with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
+         patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
+         patch('azure_mcp_agent.cli.create_agent', new_callable=AsyncMock) as mock_create_agent, \
+         patch('builtins.input') as mock_input, \
+         patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+        
+        mock_get_settings.return_value = mock_cli_settings
+        mock_validate.return_value = True
+        
+        mock_agent = MagicMock()
+        mock_thread = MagicMock()
+        mock_agent.get_new_thread.return_value = mock_thread
+        
+        async def mock_run_stream(messages, thread):
+            chunk = MagicMock()
+            chunk.text = error_response
+            yield chunk
+        
+        mock_agent.run_stream = mock_run_stream
+        mock_create_agent.return_value = mock_agent
+        
+        mock_input.side_effect = [
+            "rg-invalid のストレージアカウントを一覧して",
+            "exit"
+        ]
+        
+        exit_code = await run_interactive_session()
+        assert exit_code == 0
+        
+        output = mock_stdout.getvalue()
+        assert "見つかりませんでした" in output, "Expected error message in output"
+        assert "リソースグループ" in output, "Expected RG mention in output"
+
+
+@pytest.mark.asyncio
+async def test_cli_handles_empty_storage_accounts_in_rg(mock_cli_settings):
+    """Test that CLI handles resource groups with no storage accounts
+    
+    User Story 2 / T020: エッジケーステスト
+    
+    Given: CLI is running
+    When: User asks for storage accounts in an RG with none
+    Then: CLI displays friendly message in Japanese
+    """
+    run_interactive_session = azure_mcp_agent.cli.run_interactive_session
+    
+    empty_response = MOCK_EMPTY_STORAGE_ACCOUNTS_RESPONSE.format(rg_name="rg-empty")
+    
+    with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
+         patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
+         patch('azure_mcp_agent.cli.create_agent', new_callable=AsyncMock) as mock_create_agent, \
+         patch('builtins.input') as mock_input, \
+         patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+        
+        mock_get_settings.return_value = mock_cli_settings
+        mock_validate.return_value = True
+        
+        mock_agent = MagicMock()
+        mock_thread = MagicMock()
+        mock_agent.get_new_thread.return_value = mock_thread
+        
+        async def mock_run_stream(messages, thread):
+            chunk = MagicMock()
+            chunk.text = empty_response
+            yield chunk
+        
+        mock_agent.run_stream = mock_run_stream
+        mock_create_agent.return_value = mock_agent
+        
+        mock_input.side_effect = [
+            "rg-empty のストレージアカウントを一覧して",
+            "exit"
+        ]
+        
+        exit_code = await run_interactive_session()
+        assert exit_code == 0
+        
+        output = mock_stdout.getvalue()
+        assert "ストレージアカウント" in output
+        assert "見つかりませんでした" in output
