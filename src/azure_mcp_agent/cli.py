@@ -6,6 +6,7 @@ to Azure resources via Azure MCP Server.
 
 import asyncio
 import logging
+import os
 import sys
 
 from .agent import create_agent
@@ -137,7 +138,6 @@ async def run_interactive_session() -> int:
 def _setup_logging():
     """Setup logging configuration for the application"""
     # Get log level from environment variable, default to INFO
-    import os
     log_level_str = os.environ.get("AZURE_MCP_AGENT_LOG_LEVEL", "INFO").upper()
     log_level = getattr(logging, log_level_str, logging.INFO)
     

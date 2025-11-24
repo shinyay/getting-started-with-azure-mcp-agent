@@ -5,6 +5,7 @@ Tests verify agent behavior with mocked MCP client for error queries.
 """
 
 import sys
+import time
 from pathlib import Path
 
 # Ensure src is in path before any imports
@@ -329,7 +330,6 @@ async def test_agent_handles_large_resource_group_list_efficiently(mock_settings
     When: Agent processes and formats the response
     Then: Response is generated without significant delay
     """
-    import time
     create_agent = azure_mcp_agent.agent.create_agent
     
     with patch('azure_mcp_agent.mcp_client.create_azure_mcp_tool') as mock_create_tool:
@@ -390,7 +390,6 @@ async def test_agent_handles_large_storage_account_list_efficiently(mock_setting
     When: Agent processes and formats the response
     Then: Response is generated without significant delay
     """
-    import time
     create_agent = azure_mcp_agent.agent.create_agent
     
     with patch('azure_mcp_agent.mcp_client.create_azure_mcp_tool') as mock_create_tool:
@@ -454,7 +453,6 @@ async def test_agent_handles_large_error_summary_efficiently(mock_settings):
     When: Agent processes and summarizes
     Then: Response is generated efficiently with aggregated view
     """
-    import time
     create_agent = azure_mcp_agent.agent.create_agent
     
     with patch('azure_mcp_agent.mcp_client.create_azure_mcp_tool') as mock_create_tool:
