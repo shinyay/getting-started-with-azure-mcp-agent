@@ -25,6 +25,9 @@ from tests.conftest import (
     MOCK_STORAGE_ACCOUNTS_RESPONSE,
     MOCK_EMPTY_STORAGE_ACCOUNTS_RESPONSE,
     MOCK_RESOURCE_GROUP_NOT_FOUND_RESPONSE,
+    MOCK_LOG_ANALYTICS_ERROR_SUMMARY,
+    MOCK_NO_ERRORS_FOUND_RESPONSE,
+    MOCK_LOG_ANALYTICS_PERMISSION_ERROR,
 )
 
 
@@ -406,21 +409,8 @@ async def test_cli_summarizes_log_analytics_errors(mock_cli_settings):
     """
     run_interactive_session = azure_mcp_agent.cli.run_interactive_session
     
-    # Mock agent response with error summary
-    expected_error_summary = """直近 1 時間のエラー状況を要約しました。
-
-■ エラー件数の概要
-- Application エラー: 12 件
-- Platform エラー: 3 件
-
-■ 代表的なエラーメッセージ
-- Application: "Database connection timeout" (resource: /subscriptions/sub-123/resourceGroups/rg-app)
-- Platform: "VM failed to start" (resource: /subscriptions/sub-123/resourceGroups/rg-infra)
-
-■ 次に実行をおすすめする 3〜5 ステップ
-1. Application エラーについて、該当リソースのメトリックを確認してください。
-2. Database の接続文字列やネットワーク設定を確認してください。
-3. Platform エラーが継続する場合は、Azure サポートに問い合わせてください。"""
+    # Mock agent response with error summary using shared template
+    expected_error_summary = MOCK_LOG_ANALYTICS_ERROR_SUMMARY.format(timespan="1 時間")
     
     with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
          patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
@@ -469,7 +459,7 @@ async def test_cli_summarizes_log_analytics_errors(mock_cli_settings):
         
         # Verify no traceback or error messages
         assert "Traceback" not in output
-        assert "Error" not in output and "エラー件数" not in output or "エラー" in output  # エラー is expected in content
+        assert "Error" not in output  # エラー is expected in Japanese content
 
 
 @pytest.mark.asyncio
@@ -484,7 +474,7 @@ async def test_cli_handles_no_errors_in_log_analytics(mock_cli_settings):
     """
     run_interactive_session = azure_mcp_agent.cli.run_interactive_session
     
-    no_errors_response = "指定期間にエラーは検出されませんでした。"
+    no_errors_response = MOCK_NO_ERRORS_FOUND_RESPONSE
     
     with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
          patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
@@ -532,7 +522,7 @@ async def test_cli_handles_log_analytics_permission_error(mock_cli_settings):
     """
     run_interactive_session = azure_mcp_agent.cli.run_interactive_session
     
-    permission_error = "Log Analytics ワークスペースにアクセスする権限が不足しています。Azure の権限設定を確認してください。"
+    permission_error = MOCK_LOG_ANALYTICS_PERMISSION_ERROR
     
     with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
          patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \

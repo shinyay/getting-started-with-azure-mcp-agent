@@ -20,6 +20,14 @@ from unittest.mock import MagicMock, patch
 import azure_mcp_agent.agent
 import azure_mcp_agent.mcp_client
 
+# Import shared test response templates
+from tests.conftest import (
+    MOCK_LOG_ANALYTICS_ERROR_SUMMARY,
+    MOCK_NO_ERRORS_FOUND_RESPONSE,
+    MOCK_LOG_ANALYTICS_PERMISSION_ERROR,
+    MOCK_LOG_ANALYTICS_TIMEOUT_ERROR,
+)
+
 
 @pytest.fixture
 def mock_settings():
@@ -149,7 +157,7 @@ async def test_agent_handles_no_errors_found(mock_settings):
             
             async def mock_run_stream(*args, **kwargs):
                 chunk = MagicMock()
-                chunk.text = "指定期間にエラーは検出されませんでした。"
+                chunk.text = MOCK_NO_ERRORS_FOUND_RESPONSE
                 yield chunk
             
             mock_agent_instance.run_stream = mock_run_stream
@@ -196,7 +204,7 @@ async def test_agent_handles_log_analytics_permission_error(mock_settings):
             
             async def mock_run_stream(*args, **kwargs):
                 chunk = MagicMock()
-                chunk.text = "Log Analytics ワークスペースにアクセスする権限が不足しています。Azure の権限設定を確認してください。"
+                chunk.text = MOCK_LOG_ANALYTICS_PERMISSION_ERROR
                 yield chunk
             
             mock_agent_instance.run_stream = mock_run_stream
@@ -244,7 +252,7 @@ async def test_agent_handles_log_analytics_query_failure(mock_settings):
             
             async def mock_run_stream(*args, **kwargs):
                 chunk = MagicMock()
-                chunk.text = "Azure 側で一時的な問題が発生しています。時間をおいて再実行してください。"
+                chunk.text = MOCK_LOG_ANALYTICS_TIMEOUT_ERROR
                 yield chunk
             
             mock_agent_instance.run_stream = mock_run_stream
