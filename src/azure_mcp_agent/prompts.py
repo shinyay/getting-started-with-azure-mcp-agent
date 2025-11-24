@@ -53,14 +53,37 @@ Azure MCP Server 経由で Azure のサブスクリプション・リソース�
 - リソースグループが存在しない場合: 「指定されたリソースグループ「<RG名>」が見つかりませんでした。リソースグループ名を確認してください。」
 - 権限がない場合: 「指定されたリソースへのアクセス権限がありません。Azure の権限設定を確認してください。」
 
-## Log Analytics エラー要約について
-Log Analytics のエラーを要約する際は、以下の形式で簡潔なトラブルシュートガイドを提供してください:
-1. エラーの概要（件数、期間、主なエラー種別）
-2. 代表的なエラーメッセージ（上位3-5件）
-3. 推奨される確認手順（3-5ステップ程度）
-4. 次に実行すべきアクション候補
+## Log Analytics エラー要約の表示形式 (User Story 3)
+Log Analytics のエラーを要約する際は、以下の形式を使用してください:
 
-詳細な手順書レベルの長文ガイドや、個別環境に依存する細かな操作指示は含めないでください。
+```
+直近 <期間> のエラー状況を要約しました。
+
+■ エラー件数の概要
+- <カテゴリ/重大度> エラー: <件数> 件
+- <カテゴリ/重大度> エラー: <件数> 件
+...
+
+■ 代表的なエラーメッセージ
+- <カテゴリ>: "<メッセージ>" (resource: <リソースID>)
+- <カテゴリ>: "<メッセージ>" (resource: <リソースID>)
+...
+
+■ 次に実行をおすすめする 3〜5 ステップ
+1. <具体的な確認項目や観点>
+2. <具体的な確認項目や観点>
+3. <具体的な確認項目や観点>
+4. <必要に応じて4-5ステップ目>
+```
+
+重要な注意事項:
+- トラブルシュートガイドは必ず **3〜5 ステップ** に収めてください（FR-008）
+- 各ステップは「確認すべき観点」レベルとし、詳細な手順書や個別環境依存の操作指示は含めないでください
+- severity や category でグループ化し、代表的なエラーメッセージを含めてください
+- エラーが 0 件の場合: 「指定期間にエラーは検出されませんでした。」
+- 権限がない場合: 「Log Analytics ワークスペースにアクセスする権限が不足しています。Azure の権限設定を確認してください。」
+- Azure側エラーの場合: 「Azure 側で一時的な問題が発生しています。時間をおいて再実行してください。」
+- 複数のワークスペースがある場合: ユーザーに対象ワークスペースの指定を促してください
 """
 
 # Tool descriptions for MCP tools (to be used when configuring agent)
@@ -77,6 +100,10 @@ ERROR_MESSAGES = {
     "mcp_connection_error": "Azure MCP Server への接続に失敗しました。MCP Server が起動していることを確認してください。\n起動コマンド: npx -y @azure/mcp@latest server start",
     "timeout_error": "リクエストがタイムアウトしました。時間をおいて再度実行してください。",
     "unknown_error": "予期しないエラーが発生しました: {error}",
+    # Log Analytics specific errors
+    "log_analytics_permission_denied": "Log Analytics ワークスペースにアクセスする権限が不足しています。Azure の権限設定を確認してください。",
+    "log_analytics_workspace_not_found": "指定された Log Analytics ワークスペース「{workspace_name}」が見つかりませんでした。",
+    "log_analytics_query_failed": "Azure 側で一時的な問題が発生しています。時間をおいて再実行してください。",
 }
 
 # Success message templates
@@ -84,6 +111,8 @@ SUCCESS_MESSAGES = {
     "resource_groups_found": "リソースグループを {count} 件見つけました:",
     "storage_accounts_found": "ストレージアカウントを {count} 件見つけました:",
     "no_errors_found": "指定期間にエラーは検出されませんでした。",
+    # log_analytics_errors_found included for consistency with agent responses and potential future use
+    "log_analytics_errors_found": "直近 {timespan} のエラー状況を要約しました。",
 }
 
 

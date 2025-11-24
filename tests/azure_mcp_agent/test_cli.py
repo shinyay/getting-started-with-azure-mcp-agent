@@ -25,6 +25,9 @@ from tests.conftest import (
     MOCK_STORAGE_ACCOUNTS_RESPONSE,
     MOCK_EMPTY_STORAGE_ACCOUNTS_RESPONSE,
     MOCK_RESOURCE_GROUP_NOT_FOUND_RESPONSE,
+    MOCK_LOG_ANALYTICS_ERROR_SUMMARY,
+    MOCK_NO_ERRORS_FOUND_RESPONSE,
+    MOCK_LOG_ANALYTICS_PERMISSION_ERROR,
 )
 
 
@@ -387,3 +390,275 @@ async def test_cli_handles_empty_storage_accounts_in_rg(mock_cli_settings):
         output = mock_stdout.getvalue()
         assert "ストレージアカウント" in output
         assert "見つかりませんでした" in output
+
+
+# ============================================================================
+# User Story 3: Log Analytics Error Summarization CLI Tests
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_cli_summarizes_log_analytics_errors(mock_cli_settings):
+    """Test CLI flow for Log Analytics error summarization query
+    
+    User Story 3 / T027: CLI レベルのテスト - Log Analytics エラー要約
+    
+    Given: CLI is running with mocked agent
+    When: User enters "直近1時間のエラーをLog Analyticsで確認して"
+    Then: CLI displays error summary with counts, messages, and troubleshooting guide
+    """
+    run_interactive_session = azure_mcp_agent.cli.run_interactive_session
+    
+    # Mock agent response with error summary using shared template
+    expected_error_summary = MOCK_LOG_ANALYTICS_ERROR_SUMMARY.format(timespan="1 時間")
+    
+    with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
+         patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
+         patch('azure_mcp_agent.cli.create_agent', new_callable=AsyncMock) as mock_create_agent, \
+         patch('builtins.input') as mock_input, \
+         patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+        
+        # Setup mocks
+        mock_get_settings.return_value = mock_cli_settings
+        mock_validate.return_value = True
+        
+        # Mock agent
+        mock_agent = MagicMock()
+        mock_thread = MagicMock()
+        mock_agent.get_new_thread.return_value = mock_thread
+        
+        # Mock streaming response
+        async def mock_run_stream(messages, thread):
+            chunk = MagicMock()
+            chunk.text = expected_error_summary
+            yield chunk
+        
+        mock_agent.run_stream = mock_run_stream
+        mock_create_agent.return_value = mock_agent
+        
+        # Mock user input (query, then exit)
+        mock_input.side_effect = [
+            "直近1時間のエラーをLog Analyticsで確認して",
+            "exit"
+        ]
+        
+        # Run CLI session
+        exit_code = await run_interactive_session()
+        
+        # Verify successful execution
+        assert exit_code == 0, "CLI should exit successfully"
+        
+        # Verify output contains expected content
+        output = mock_stdout.getvalue()
+        assert "エラー件数" in output, "Expected error count section in output"
+        assert "Application" in output, "Expected Application category in output"
+        assert "12 件" in output, "Expected specific count in output"
+        assert "代表的なエラーメッセージ" in output, "Expected error message section"
+        assert "Database connection timeout" in output, "Expected error message"
+        assert "次に実行をおすすめする" in output or "ステップ" in output, "Expected troubleshooting guide"
+        
+        # Verify no traceback or error messages
+        assert "Traceback" not in output
+        assert "Error" not in output  # Check for absence of English error keywords (like 'Error'); Japanese 'エラー' is expected and acceptable in the content
+
+
+@pytest.mark.asyncio
+async def test_cli_handles_no_errors_in_log_analytics(mock_cli_settings):
+    """Test that CLI handles case when no errors are found in Log Analytics
+    
+    User Story 3 / T027: エッジケーステスト - エラー0件
+    
+    Given: CLI is running
+    When: User asks for error summary in a period with no errors
+    Then: CLI displays friendly message in Japanese
+    """
+    run_interactive_session = azure_mcp_agent.cli.run_interactive_session
+    
+    no_errors_response = MOCK_NO_ERRORS_FOUND_RESPONSE
+    
+    with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
+         patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
+         patch('azure_mcp_agent.cli.create_agent', new_callable=AsyncMock) as mock_create_agent, \
+         patch('builtins.input') as mock_input, \
+         patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+        
+        mock_get_settings.return_value = mock_cli_settings
+        mock_validate.return_value = True
+        
+        mock_agent = MagicMock()
+        mock_thread = MagicMock()
+        mock_agent.get_new_thread.return_value = mock_thread
+        
+        async def mock_run_stream(messages, thread):
+            chunk = MagicMock()
+            chunk.text = no_errors_response
+            yield chunk
+        
+        mock_agent.run_stream = mock_run_stream
+        mock_create_agent.return_value = mock_agent
+        
+        mock_input.side_effect = [
+            "直近1時間のエラーをLog Analyticsで確認して",
+            "exit"
+        ]
+        
+        exit_code = await run_interactive_session()
+        assert exit_code == 0
+        
+        output = mock_stdout.getvalue()
+        assert "エラー" in output
+        assert "検出されませんでした" in output or "見つかりませんでした" in output
+
+
+@pytest.mark.asyncio
+async def test_cli_handles_log_analytics_permission_error(mock_cli_settings):
+    """Test that CLI handles Log Analytics permission errors gracefully
+    
+    User Story 3 / T027: エッジケーステスト - 権限不足
+    
+    Given: CLI is running
+    When: User asks for error summary but lacks permissions
+    Then: CLI displays clear error message in Japanese
+    """
+    run_interactive_session = azure_mcp_agent.cli.run_interactive_session
+    
+    permission_error = MOCK_LOG_ANALYTICS_PERMISSION_ERROR
+    
+    with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
+         patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
+         patch('azure_mcp_agent.cli.create_agent', new_callable=AsyncMock) as mock_create_agent, \
+         patch('builtins.input') as mock_input, \
+         patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+        
+        mock_get_settings.return_value = mock_cli_settings
+        mock_validate.return_value = True
+        
+        mock_agent = MagicMock()
+        mock_thread = MagicMock()
+        mock_agent.get_new_thread.return_value = mock_thread
+        
+        async def mock_run_stream(messages, thread):
+            chunk = MagicMock()
+            chunk.text = permission_error
+            yield chunk
+        
+        mock_agent.run_stream = mock_run_stream
+        mock_create_agent.return_value = mock_agent
+        
+        mock_input.side_effect = [
+            "直近24時間のエラーをLog Analyticsで確認して",
+            "exit"
+        ]
+        
+        exit_code = await run_interactive_session()
+        assert exit_code == 0
+        
+        output = mock_stdout.getvalue()
+        assert "権限" in output
+        assert "Log Analytics" in output or "ワークスペース" in output
+
+
+@pytest.mark.asyncio
+async def test_cli_handles_various_time_range_expressions(mock_cli_settings):
+    """Test that CLI handles various natural language time range expressions
+    
+    User Story 3 / T027: 期間指定のインタラクション
+    
+    Given: CLI is running
+    When: User uses different time range expressions (1時間, 24時間, 今日, etc.)
+    Then: CLI processes and responds appropriately
+    """
+    run_interactive_session = azure_mcp_agent.cli.run_interactive_session
+    
+    time_queries = [
+        "直近1時間のエラーをLog Analyticsで確認して",
+        "直近24時間のエラーをLog Analyticsで確認して",
+        "今日のエラーをLog Analyticsで確認して",
+    ]
+    
+    for query in time_queries:
+        with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
+             patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
+             patch('azure_mcp_agent.cli.create_agent', new_callable=AsyncMock) as mock_create_agent, \
+             patch('builtins.input') as mock_input, \
+             patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            
+            mock_get_settings.return_value = mock_cli_settings
+            mock_validate.return_value = True
+            
+            mock_agent = MagicMock()
+            mock_thread = MagicMock()
+            mock_agent.get_new_thread.return_value = mock_thread
+            
+            async def mock_run_stream(messages, thread):
+                chunk = MagicMock()
+                chunk.text = "エラー状況を要約しました。（テスト応答）"
+                yield chunk
+            
+            mock_agent.run_stream = mock_run_stream
+            mock_create_agent.return_value = mock_agent
+            
+            mock_input.side_effect = [query, "exit"]
+            
+            exit_code = await run_interactive_session()
+            assert exit_code == 0, f"CLI should handle time expression: {query}"
+
+
+@pytest.mark.asyncio
+async def test_cli_handles_workspace_specific_queries(mock_cli_settings):
+    """Test that CLI handles workspace-specific error queries
+    
+    User Story 3 / T027: ワークスペース指定のインタラクション
+    
+    Given: CLI is running
+    When: User specifies a specific workspace in the query
+    Then: CLI processes the workspace-specific query appropriately
+    """
+    run_interactive_session = azure_mcp_agent.cli.run_interactive_session
+    
+    workspace_response = """ワークスペース「workspace-app-prod」の直近 1 時間のエラー状況:
+
+■ エラー件数の概要
+- Error: 5 件
+- Warning: 2 件
+
+■ 代表的なエラーメッセージ
+- Error: "API request failed" (resource: /subscriptions/sub-123/resourceGroups/rg-app)
+
+■ 次に実行をおすすめする 3 ステップ
+1. API のエンドポイント設定を確認してください。
+2. ネットワーク接続とファイアウォール設定を確認してください。
+3. API のログを詳細に確認してください。"""
+    
+    with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
+         patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
+         patch('azure_mcp_agent.cli.create_agent', new_callable=AsyncMock) as mock_create_agent, \
+         patch('builtins.input') as mock_input, \
+         patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+        
+        mock_get_settings.return_value = mock_cli_settings
+        mock_validate.return_value = True
+        
+        mock_agent = MagicMock()
+        mock_thread = MagicMock()
+        mock_agent.get_new_thread.return_value = mock_thread
+        
+        async def mock_run_stream(messages, thread):
+            chunk = MagicMock()
+            chunk.text = workspace_response
+            yield chunk
+        
+        mock_agent.run_stream = mock_run_stream
+        mock_create_agent.return_value = mock_agent
+        
+        mock_input.side_effect = [
+            "workspace-app-prod の直近1時間のエラーを確認して",
+            "exit"
+        ]
+        
+        exit_code = await run_interactive_session()
+        assert exit_code == 0
+        
+        output = mock_stdout.getvalue()
+        assert "workspace-app-prod" in output
+        assert "エラー件数" in output or "エラー状況" in output
