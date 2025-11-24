@@ -40,41 +40,89 @@ source .venv/bin/activate  # Windows の場合: .venv\Scripts\activate
 pip install -e ".[dev]"
 ```
 
-## Usage
+## Quick Start
 
-1. Azure MCP Server を起動（別ターミナル）:
+詳細な使用方法と例については、**[Quickstart ガイド](specs/001-azure-resource-guide-agent/quickstart.md)** を参照してください。
 
+### 基本的な使い方
+
+1. 環境変数を設定:
 ```bash
-npx -y @azure/mcp@latest server start
+export GITHUB_MODEL_NAME="gpt-4o"
+export GITHUB_API_KEY="your-github-token-here"
+export GITHUB_API_BASE="https://models.inference.ai.azure.com"
 ```
 
-2. エージェントを起動:
+2. Azure 認証:
+```bash
+az login
+az account set --subscription <your-subscription-id>
+```
 
+3. エージェントを起動:
 ```bash
 azure-mcp-agent
 # または
 python -m azure_mcp_agent
 ```
 
-3. 日本語で問い合わせを行う:
+4. 日本語で問い合わせを行う:
+```
+あなた: このサブスクリプションのリソースグループ一覧を出して
+あなた: rg-app-core のストレージアカウントを一覧して
+あなた: 直近1時間のエラーをLog Analyticsで確認して
+```
 
-- 例: `このサブスクリプションのリソースグループ一覧を出して`
-- 例: `<RG名> のストレージアカウントを一覧して`
-- 例: `直近 1 時間のエラーを Log Analytics で確認して`
+**📖 詳細な使用例と期待される出力については [Quickstart](specs/001-azure-resource-guide-agent/quickstart.md) を参照してください。**
+
+## Documentation
+
+- **[Quickstart ガイド](specs/001-azure-resource-guide-agent/quickstart.md)** - セットアップと使用例
+- **[プロダクト仕様](specs/001-azure-resource-guide-agent/spec.md)** - 機能要件とユーザーストーリー
+- **[実装プラン](specs/001-azure-resource-guide-agent/plan.md)** - アーキテクチャと設計判断
+- **[タスク一覧](specs/001-azure-resource-guide-agent/tasks.md)** - 開発タスクとフェーズ
 
 ## Development
 
-テストを実行:
+### テストを実行
 
+すべてのテストを実行:
 ```bash
 pytest
+```
+
+特定のテストファイルのみ実行:
+```bash
+pytest tests/azure_mcp_agent/test_agent_basic.py -v
+```
+
+### ログレベルの設定
+
+デバッグログを有効化:
+```bash
+export AZURE_MCP_AGENT_LOG_LEVEL=DEBUG
+python -m azure_mcp_agent
+```
+
+### コード構成
+
+```
+src/azure_mcp_agent/
+├── __init__.py          # パッケージ初期化
+├── __main__.py          # python -m azure_mcp_agent エントリポイント
+├── agent.py             # エージェント本体（ChatAgent の作成）
+├── cli.py               # 対話型 CLI REPL
+├── config.py            # 設定管理（環境変数からの読み込み）
+├── main.py              # メインエントリポイント
+├── mcp_client.py        # Azure MCP Server クライアント
+└── prompts.py           # システムプロンプトとメッセージテンプレート
 ```
 
 ## References
 
 - [Microsoft Agent Framework](https://github.com/microsoft/agent-framework)
 - [Azure MCP Server](https://github.com/azure/mcp)
-- [Spec Documentation](specs/001-azure-resource-guide-agent/spec.md)
+- [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)
 
 ## Licence
 

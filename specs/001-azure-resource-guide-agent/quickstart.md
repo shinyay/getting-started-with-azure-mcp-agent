@@ -105,23 +105,119 @@ python src/azure_mcp_agent/main.py
 あなた: このサブスクリプションのリソースグループ一覧を出して
 ```
 
-### 質問の例
+### User Story 1: リソースグループ一覧
 
-**リソースグループ一覧:**
+**質問例:**
 ```
 このサブスクリプションのリソースグループ一覧を出して
 ```
 
-**ストレージアカウント一覧:**
+**期待される応答例:**
 ```
-<リソースグループ名> のストレージアカウントを一覧して
+エージェント: 以下がこのサブスクリプションのリソースグループ一覧です:
+
+- rg-app-core (location: japaneast, tags: env=prod, owner=team-a)
+- rg-app-dev (location: japanwest, tags: env=dev)
+- rg-data (location: japaneast, tags: project=analytics)
+- rg-network (location: japaneast, tags: env=prod)
+
+合計 4 件のリソースグループが見つかりました。
 ```
 
-**Log Analytics エラー確認:**
+**エラー例（権限不足の場合）:**
+```
+エージェント: サブスクリプションにアクセスする権限が不足しています。管理者に権限の確認を依頼してください。
+```
+
+---
+
+### User Story 2: ストレージアカウント一覧
+
+**質問例:**
+```
+rg-app-core のストレージアカウントを一覧して
+```
+
+**期待される応答例:**
+```
+エージェント: リソースグループ「rg-app-core」内のストレージアカウント一覧:
+
+- stappcore001 (location: japaneast, kind: StorageV2, sku: Standard_LRS)
+- stappcore002 (location: japaneast, kind: BlobStorage, sku: Standard_GRS)
+- stappcorelogs (location: japanwest, kind: StorageV2, sku: Standard_ZRS)
+
+合計 3 件のストレージアカウントが見つかりました。
+```
+
+**エラー例（リソースグループが存在しない場合）:**
+```
+エージェント: 指定されたリソースグループ「rg-not-exist」が見つかりませんでした。リソースグループ名を確認してください。
+```
+
+**空のリソースグループの場合:**
+```
+エージェント: リソースグループ「rg-empty」にはストレージアカウントが見つかりませんでした。
+```
+
+---
+
+### User Story 3: Log Analytics エラー要約
+
+**質問例1: ワークスペースを指定せずに確認**
 ```
 直近1時間のエラーをLog Analyticsで確認して
+```
+
+**質問例2: ワークスペースを指定して確認**
+```
 workspace-app-prod の直近24時間のエラーを確認して
 ```
+
+**期待される応答例:**
+```
+エージェント: 直近 1 時間 のエラー状況を要約しました。
+
+■ エラー件数の概要
+- Application エラー: 12 件
+- Platform エラー: 3 件
+- Warning: 5 件
+
+■ 代表的なエラーメッセージ
+- Application: "Database connection timeout occurred" (resource: /subscriptions/sub-123/resourceGroups/rg-app/providers/Microsoft.Web/sites/app-web)
+- Platform: "VM failed to start due to allocation error" (resource: /subscriptions/sub-123/resourceGroups/rg-infra/providers/Microsoft.Compute/virtualMachines/vm-01)
+- Warning: "High CPU usage detected" (resource: /subscriptions/sub-123/resourceGroups/rg-app/providers/Microsoft.Web/sites/app-api)
+
+■ 次に実行をおすすめする 3〜5 ステップ
+1. Application エラーについて、該当リソースのメトリック（CPU/メモリ/接続数）を確認してください。
+2. Database の接続文字列やネットワーク設定（NSG/Firewall）に変更がなかったかを確認してください。
+3. Platform エラーが継続する場合は、別リージョンでのリソース再作成を検討してください。
+4. 高 CPU 使用率の警告については、アプリケーションのスケールアウトやコード最適化を検討してください。
+```
+
+**エラー0件の場合:**
+```
+エージェント: 指定期間にエラーは検出されませんでした。
+```
+
+**複数ワークスペースがある場合:**
+```
+エージェント: 複数の Log Analytics ワークスペースが見つかりました。対象とするワークスペースを指定してください:
+
+- workspace-app-prod (location: japaneast)
+- workspace-infra-prod (location: japanwest)
+- workspace-dev (location: japaneast)
+
+例: "workspace-app-prod の直近1時間のエラーを確認して"
+```
+
+---
+
+### その他の質問例
+
+**時間範囲の指定:**
+- `直近 1 時間のエラーを確認して`
+- `過去 24 時間のエラーを教えて`
+- `今日のエラー状況を見せて`
 
 ### 終了方法
 
@@ -129,45 +225,84 @@ workspace-app-prod の直近24時間のエラーを確認して
 - Ctrl+C を押す
 - Ctrl+D を押す
 
-## 現在の実装状況（Phase 5 完了時点）
+## 現在の実装状況（Phase 6 完了時点）
 
 ✅ **実装済み:**
+
+### 基盤機能（Phase 1-2）
 - 設定管理（config.py）
 - Azure MCP クライアント接続（mcp_client.py）
 - 日本語プロンプト・システムインストラクション（prompts.py）
 - エージェント本体（agent.py）
 - 対話型 CLI（cli.py）
 - メインエントリポイント（main.py）
-- **User Story 1: リソースグループ一覧**
-  - 日本語での自然言語クエリに対応
-  - 空のサブスクリプション・権限エラーのハンドリング
-  - テストコード完備（test_agent_basic.py, test_cli.py）
-- **User Story 2: ストレージアカウント一覧**
-  - 特定リソースグループ内のストレージアカウント情報取得
-  - 名前・リージョン・種別・SKU 名を原文表記で表示
-  - 存在しないリソースグループ・空のリソースグループのハンドリング
-  - テストコード完備（test_agent_basic.py, test_cli.py）
-- **User Story 3: Log Analytics エラー要約** ✨ NEW
-  - Log Analytics を用いたエラー状況の把握
-  - エラー件数の集計（severity / category 別）
-  - 代表的なエラーメッセージの抽出
-  - 3〜5 ステップの簡潔なトラブルシュートガイド（FR-008）
-  - 期間指定（直近1時間、24時間など）の自然言語サポート
-  - ワークスペース選択・権限エラー・エラー0件などのエッジケース対応
-  - テストコード完備（test_log_analytics.py, test_cli.py）
+- **ロギング機能** - Python logging を使用した診断ログ（Phase 6）
+  - 環境変数 `AZURE_MCP_AGENT_LOG_LEVEL` でログレベル制御可能
+  - デフォルト: INFO レベル、標準エラー出力（stderr）に出力
+- **エラーハンドリング** - ユーザーフレンドリーな日本語エラーメッセージ（Phase 6）
+  - スタックトレースを非表示
+  - 権限エラー・タイムアウト・一時障害の適切な処理
 
-⏳ **未実装（Phase 6 で対応予定）:**
-- ポリッシング・クロスカッティング最適化
+### User Story 1: リソースグループ一覧（Phase 3）
+- 日本語での自然言語クエリに対応
+- 空のサブスクリプション・権限エラーのハンドリング
+- テストコード完備（test_agent_basic.py, test_cli.py）
+- エッジケーステスト: 権限不足、タイムアウト、一時障害（Phase 6）
+
+### User Story 2: ストレージアカウント一覧（Phase 4）
+- 特定リソースグループ内のストレージアカウント情報取得
+- 名前・リージョン・種別・SKU 名を原文表記で表示
+- 存在しないリソースグループ・空のリソースグループのハンドリング
+- テストコード完備（test_agent_basic.py, test_cli.py）
+- エッジケーステスト: 権限不足、存在しないリソースグループ（Phase 6）
+
+### User Story 3: Log Analytics エラー要約（Phase 5）
+- Log Analytics を用いたエラー状況の把握
+- エラー件数の集計（severity / category 別）
+- 代表的なエラーメッセージの抽出
+- 3〜5 ステップの簡潔なトラブルシュートガイド（FR-008）
+- 期間指定（直近1時間、24時間など）の自然言語サポート
+- ワークスペース選択・権限エラー・エラー0件などのエッジケース対応
+- テストコード完備（test_log_analytics.py, test_cli.py）
+- パフォーマンステスト: 大量エラー（500件）の要約処理（Phase 6）
+
+### Phase 6: Polish & Cross-Cutting Concerns ✨
+- **ロギング強化**: MCP ツール呼び出しと重要なエラーの詳細ログ
+- **プロンプト改善**: 読み取り専用・日本語応答・あいまい入力処理の明文化
+- **エッジケーステスト**: タイムアウト、一時障害、権限エラーの網羅的テスト
+- **パフォーマンステスト**: 大量データ（100 RG、50 SA、500 errors）の処理検証
+- **ドキュメント充実**: 詳細な使用例と期待される応答の追加
+
+**テスト状況:**
+- 合計 42 テスト（Phase 1-6）
+- すべてのテストが成功
 
 ## トラブルシューティング
 
 ### 環境変数が設定されていないエラー
 
 ```
-設定エラー: 必須の環境変数が設定されていません: GITHUB_MODEL_NAME or AZURE_OPENAI_MODEL_NAME
+設定エラー: 必須の環境変数が設定されていません
 ```
 
-→ 上記の「環境変数の設定」セクションを参照して、必要な環境変数を設定してください。
+**原因:** LLM API への接続に必要な環境変数が設定されていません。
+
+**解決方法:**
+1. GitHub Models を使用する場合:
+   ```bash
+   export GITHUB_MODEL_NAME="gpt-4o"
+   export GITHUB_API_KEY="your-github-token-here"
+   export GITHUB_API_BASE="https://models.inference.ai.azure.com"
+   ```
+
+2. Azure OpenAI を使用する場合:
+   ```bash
+   export AZURE_OPENAI_MODEL_NAME="your-deployment-name"
+   export AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com/"
+   export AZURE_OPENAI_API_KEY="your-api-key-here"
+   ```
+
+---
 
 ### MCP Server への接続エラー
 
@@ -175,10 +310,27 @@ workspace-app-prod の直近24時間のエラーを確認して
 接続エラー: Azure MCP Server への接続に失敗しました
 ```
 
-→ 以下を確認してください:
-1. Node.js / npm がインストールされている
-2. Azure 認証が完了している（`az login`）
-3. ネットワーク接続が正常
+**原因:** Azure MCP Server との通信に問題があります。
+
+**解決方法:**
+1. Node.js / npm がインストールされているか確認:
+   ```bash
+   node --version
+   npm --version
+   ```
+
+2. Azure 認証が完了しているか確認:
+   ```bash
+   az login
+   az account show
+   ```
+
+3. Azure MCP Server を手動で起動して動作確認:
+   ```bash
+   npx -y @azure/mcp@latest server start --read-only
+   ```
+
+---
 
 ### Node.js が見つからないエラー
 
@@ -186,20 +338,101 @@ workspace-app-prod の直近24時間のエラーを確認して
 警告: MCP サーバーコマンド 'npx' が見つかりません。
 ```
 
-→ Node.js をインストールしてください:
-- https://nodejs.org/ からインストール
-- または: `brew install node` (macOS) / `apt install nodejs npm` (Ubuntu)
+**原因:** Node.js がインストールされていないか、PATH が通っていません。
+
+**解決方法:**
+- **macOS**: `brew install node`
+- **Ubuntu/Debian**: `sudo apt install nodejs npm`
+- **Windows**: https://nodejs.org/ からインストーラーをダウンロード
+- **その他**: https://nodejs.org/
+
+インストール後、以下で確認:
+```bash
+node --version
+npm --version
+```
+
+---
+
+### 権限エラー（Permission Denied）
+
+```
+サブスクリプションにアクセスする権限が不足しています
+```
+
+**原因:** Azure サブスクリプションやリソースへのアクセス権限がありません。
+
+**解決方法:**
+1. Azure ポータルで、適切な RBAC ロールが割り当てられているか確認
+   - 最小権限: `Reader` ロール（読み取り専用）
+   - Log Analytics: `Log Analytics Reader` ロール
+   
+2. 正しいサブスクリプションにログインしているか確認:
+   ```bash
+   az account show
+   az account list --output table
+   az account set --subscription <subscription-id>
+   ```
+
+---
+
+### タイムアウトエラー
+
+```
+リクエストがタイムアウトしました。時間をおいて再度実行してください。
+```
+
+**原因:** Azure API の応答が遅い、またはネットワークに問題があります。
+
+**解決方法:**
+1. しばらく時間をおいて再実行
+2. ネットワーク接続を確認
+3. Azure のサービス正常性ステータスを確認: https://status.azure.com/
+
+---
+
+### ログの有効化
+
+詳細なログを確認したい場合は、以下の環境変数を設定してください:
+
+```bash
+export AZURE_MCP_AGENT_LOG_LEVEL=DEBUG
+```
+
+ログレベルの選択肢:
+- `DEBUG`: 最も詳細（開発・デバッグ用）
+- `INFO`: 通常の情報（デフォルト）
+- `WARNING`: 警告のみ
+- `ERROR`: エラーのみ
 
 ## 期待される動作
 
-- Azure MCP Server を通じて Azure サブスクリプションの情報にアクセス
-- すべての回答は日本語で表示
-- Azure リソース名や ID は原文のまま表示
-- 読み取り専用の操作のみ（作成・更新・削除は行わない）
+このエージェントは以下の動作を保証します:
+
+### セキュリティ
+- **完全読み取り専用**: Azure リソースの作成・更新・削除は一切行いません
+- **秘密情報の保護**: トークンや接続文字列などの秘密情報は表示しません
+- **最小権限の原則**: Azure Reader ロールのみで動作します
+
+### 応答品質
+- **日本語応答**: すべての説明とエラーメッセージは日本語で表示
+- **原文保持**: Azure リソース名、ID、SKU、リージョン名は英数字のまま表示
+- **最新情報**: MCP を通じて常に最新の Azure 状態を取得
+
+### エラーハンドリング
+- **ユーザーフレンドリー**: スタックトレースは表示せず、分かりやすい日本語メッセージを表示
+- **詳細ログ**: 問題診断のため、内部では詳細なログを記録（stderr に出力）
+- **エッジケース対応**: 権限不足、タイムアウト、一時障害などを適切に処理
 
 ## 次のステップ
 
-- Phase 3: User Story 1（リソースグループ一覧）の実装
-- Phase 4: User Story 2（ストレージアカウント一覧）の実装
-- Phase 5: User Story 3（Log Analytics エラー要約）の実装
-- Phase 6: テストの追加とポリッシング
+このクイックスタートを完了したら、以下のドキュメントも参照してください:
+
+- **プロダクト仕様**: `specs/001-azure-resource-guide-agent/spec.md` - 機能要件の詳細
+- **実装プラン**: `specs/001-azure-resource-guide-agent/plan.md` - アーキテクチャと設計判断
+- **データモデル**: `specs/001-azure-resource-guide-agent/data-model.md` - データ構造の定義
+
+### フィードバックと貢献
+
+問題を発見した場合や機能要望がある場合は、GitHub Issues でお知らせください:
+https://github.com/shinyay/getting-started-with-azure-mcp-agent/issues
