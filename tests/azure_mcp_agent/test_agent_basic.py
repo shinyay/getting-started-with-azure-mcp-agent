@@ -20,6 +20,13 @@ from unittest.mock import MagicMock, patch
 import azure_mcp_agent.agent
 import azure_mcp_agent.mcp_client
 
+# Import shared test response templates
+from tests.conftest import (
+    MOCK_STORAGE_ACCOUNTS_RESPONSE,
+    MOCK_EMPTY_STORAGE_ACCOUNTS_RESPONSE,
+    MOCK_RESOURCE_GROUP_NOT_FOUND_RESPONSE,
+)
+
 
 @pytest.fixture
 def mock_settings():
@@ -223,13 +230,7 @@ async def test_agent_lists_storage_accounts_in_resource_group(mock_settings):
             
             async def mock_run_stream(*args, **kwargs):
                 """Simulate streaming response with storage account data"""
-                response_text = """リソースグループ「rg-app-core」内のストレージアカウント一覧:
-
-- stappcore001 (location: japaneast, kind: StorageV2, sku: Standard_LRS)
-- stappcore002 (location: japaneast, kind: BlobStorage, sku: Standard_GRS)
-- stappcorelogs (location: japanwest, kind: StorageV2, sku: Standard_ZRS)
-
-合計 3 件のストレージアカウントが見つかりました。"""
+                response_text = MOCK_STORAGE_ACCOUNTS_RESPONSE.format(rg_name="rg-app-core")
                 
                 chunk = MagicMock()
                 chunk.text = response_text
@@ -287,7 +288,7 @@ async def test_agent_handles_empty_storage_accounts(mock_settings):
             
             async def mock_run_stream(*args, **kwargs):
                 chunk = MagicMock()
-                chunk.text = "リソースグループ「rg-empty」にはストレージアカウントが見つかりませんでした。"
+                chunk.text = MOCK_EMPTY_STORAGE_ACCOUNTS_RESPONSE.format(rg_name="rg-empty")
                 yield chunk
             
             mock_agent_instance.run_stream = mock_run_stream
@@ -334,7 +335,7 @@ async def test_agent_handles_nonexistent_resource_group(mock_settings):
             
             async def mock_run_stream(*args, **kwargs):
                 chunk = MagicMock()
-                chunk.text = "指定されたリソースグループ「rg-not-exist」が見つかりませんでした。リソースグループ名を確認してください。"
+                chunk.text = MOCK_RESOURCE_GROUP_NOT_FOUND_RESPONSE.format(rg_name="rg-not-exist")
                 yield chunk
             
             mock_agent_instance.run_stream = mock_run_stream

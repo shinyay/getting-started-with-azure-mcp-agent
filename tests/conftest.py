@@ -18,3 +18,22 @@ for p in paths_to_remove:
 # Insert src at the beginning
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
+
+
+# ============================================================================
+# Shared Test Response Templates
+# ============================================================================
+
+# These templates ensure consistency with prompts.py and avoid duplication
+
+MOCK_STORAGE_ACCOUNTS_RESPONSE = """リソースグループ「{rg_name}」内のストレージアカウント一覧:
+
+- stappcore001 (location: japaneast, kind: StorageV2, sku: Standard_LRS)
+- stappcore002 (location: japaneast, kind: BlobStorage, sku: Standard_GRS)
+- stappcorelogs (location: japanwest, kind: StorageV2, sku: Standard_ZRS)
+
+合計 3 件のストレージアカウントが見つかりました。"""
+
+MOCK_EMPTY_STORAGE_ACCOUNTS_RESPONSE = "リソースグループ「{rg_name}」にはストレージアカウントが見つかりませんでした。"
+
+MOCK_RESOURCE_GROUP_NOT_FOUND_RESPONSE = "指定されたリソースグループ「{rg_name}」が見つかりませんでした。リソースグループ名を確認してください。"

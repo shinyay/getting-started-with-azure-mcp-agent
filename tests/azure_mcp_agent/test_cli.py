@@ -20,6 +20,12 @@ from io import StringIO
 # Import CLI module
 import azure_mcp_agent.cli
 
+# Import shared test response templates
+from tests.conftest import (
+    MOCK_EMPTY_STORAGE_ACCOUNTS_RESPONSE,
+    MOCK_RESOURCE_GROUP_NOT_FOUND_RESPONSE,
+)
+
 
 @pytest.fixture
 def mock_cli_settings():
@@ -303,7 +309,7 @@ async def test_cli_handles_nonexistent_resource_group_for_storage(mock_cli_setti
     """
     run_interactive_session = azure_mcp_agent.cli.run_interactive_session
     
-    error_response = "指定されたリソースグループ「rg-invalid」が見つかりませんでした。リソースグループ名を確認してください。"
+    error_response = MOCK_RESOURCE_GROUP_NOT_FOUND_RESPONSE.format(rg_name="rg-invalid")
     
     with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
          patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
@@ -351,7 +357,7 @@ async def test_cli_handles_empty_storage_accounts_in_rg(mock_cli_settings):
     """
     run_interactive_session = azure_mcp_agent.cli.run_interactive_session
     
-    empty_response = "リソースグループ「rg-empty」にはストレージアカウントが見つかりませんでした。"
+    empty_response = MOCK_EMPTY_STORAGE_ACCOUNTS_RESPONSE.format(rg_name="rg-empty")
     
     with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
          patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
