@@ -14,15 +14,28 @@ if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 # Import the modules we need to test
 import azure_mcp_agent.agent
 import azure_mcp_agent.mcp_client
 
 
+@pytest.fixture
+def mock_settings():
+    """Fixture for mock agent settings"""
+    settings = MagicMock()
+    settings.model_name = "gpt-4o"
+    settings.api_base = "https://test.example.com"
+    settings.api_key = "test-key"
+    settings.api_version = None
+    settings.max_completion_tokens = 4096
+    settings.temperature = 0.7
+    return settings
+
+
 @pytest.mark.asyncio
-async def test_agent_lists_resource_groups_successfully():
+async def test_agent_lists_resource_groups_successfully(mock_settings):
     """Test that agent can list resource groups with Japanese output
     
     User Story 1 / T012: Agent レベルのテスト
@@ -31,27 +44,6 @@ async def test_agent_lists_resource_groups_successfully():
     When: User asks "このサブスクリプションのリソースグループ一覧を出して"
     Then: Response includes all RG names and locations in Japanese context
     """
-    # Mock MCP tool to return test resource group data
-    mock_tool_response = {
-        "resource_groups": [
-            {
-                "name": "rg-app-core",
-                "location": "japaneast",
-                "tags": {"env": "prod", "owner": "team-a"}
-            },
-            {
-                "name": "rg-app-dev",
-                "location": "japanwest",
-                "tags": {"env": "dev"}
-            },
-            {
-                "name": "rg-data",
-                "location": "japaneast",
-                "tags": {}
-            }
-        ]
-    }
-    
     create_agent = azure_mcp_agent.agent.create_agent
     
     with patch('azure_mcp_agent.mcp_client.create_azure_mcp_tool') as mock_create_tool:
@@ -69,7 +61,7 @@ async def test_agent_lists_resource_groups_successfully():
             # Simulate agent returning Japanese response with RG data
             async def mock_run_stream(*args, **kwargs):
                 """Simulate streaming response with resource group data"""
-                response_text = f"""以下がこのサブスクリプションのリソースグループ一覧です:
+                response_text = """以下がこのサブスクリプションのリソースグループ一覧です:
 
 - rg-app-core (location: japaneast, tags: env=prod, owner=team-a)
 - rg-app-dev (location: japanwest, tags: env=dev)
@@ -87,14 +79,6 @@ async def test_agent_lists_resource_groups_successfully():
             MockChatAgent.return_value = mock_agent_instance
             
             # Create agent with mocked settings
-            mock_settings = MagicMock()
-            mock_settings.model_name = "gpt-4o"
-            mock_settings.api_base = "https://test.example.com"
-            mock_settings.api_key = "test-key"
-            mock_settings.api_version = None
-            mock_settings.max_completion_tokens = 4096
-            mock_settings.temperature = 0.7
-            
             agent = await create_agent(mock_settings)
             thread = agent.get_new_thread()
             
@@ -117,7 +101,7 @@ async def test_agent_lists_resource_groups_successfully():
 
 
 @pytest.mark.asyncio
-async def test_agent_handles_empty_resource_groups():
+async def test_agent_handles_empty_resource_groups(mock_settings):
     """Test that agent handles subscriptions with no resource groups
     
     User Story 1 / T012: エッジケーステスト（空のサブスクリプション）
@@ -147,14 +131,6 @@ async def test_agent_handles_empty_resource_groups():
             mock_agent_instance.get_new_thread.return_value = mock_thread
             MockChatAgent.return_value = mock_agent_instance
             
-            mock_settings = MagicMock()
-            mock_settings.model_name = "gpt-4o"
-            mock_settings.api_base = "https://test.example.com"
-            mock_settings.api_key = "test-key"
-            mock_settings.api_version = None
-            mock_settings.max_completion_tokens = 4096
-            mock_settings.temperature = 0.7
-            
             agent = await create_agent(mock_settings)
             thread = agent.get_new_thread()
             
@@ -172,7 +148,7 @@ async def test_agent_handles_empty_resource_groups():
 
 
 @pytest.mark.asyncio
-async def test_agent_handles_permission_errors():
+async def test_agent_handles_permission_errors(mock_settings):
     """Test that agent handles permission denied errors gracefully
     
     User Story 1 / T012: エッジケーステスト（権限不足）
@@ -201,14 +177,6 @@ async def test_agent_handles_permission_errors():
             mock_agent_instance.run_stream = mock_run_stream
             mock_agent_instance.get_new_thread.return_value = mock_thread
             MockChatAgent.return_value = mock_agent_instance
-            
-            mock_settings = MagicMock()
-            mock_settings.model_name = "gpt-4o"
-            mock_settings.api_base = "https://test.example.com"
-            mock_settings.api_key = "test-key"
-            mock_settings.api_version = None
-            mock_settings.max_completion_tokens = 4096
-            mock_settings.temperature = 0.7
             
             agent = await create_agent(mock_settings)
             thread = agent.get_new_thread()

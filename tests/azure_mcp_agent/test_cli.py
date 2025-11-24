@@ -21,8 +21,16 @@ from io import StringIO
 import azure_mcp_agent.cli
 
 
+@pytest.fixture
+def mock_cli_settings():
+    """Fixture for mock CLI settings"""
+    settings = MagicMock()
+    settings.mcp_command = "npx"
+    return settings
+
+
 @pytest.mark.asyncio
-async def test_cli_lists_resource_groups():
+async def test_cli_lists_resource_groups(mock_cli_settings):
     """Test CLI flow for resource group listing query
     
     User Story 1 / T013: CLI レベルのテスト
@@ -33,8 +41,7 @@ async def test_cli_lists_resource_groups():
     """
     run_interactive_session = azure_mcp_agent.cli.run_interactive_session
     
-    # Mock user input and agent response
-    test_input = "このサブスクリプションのリソースグループ一覧を出して\nexit\n"
+    # Mock agent response
     expected_rg_output = """以下がこのサブスクリプションのリソースグループ一覧です:
 
 - rg-test-1 (location: japaneast)
@@ -44,14 +51,12 @@ async def test_cli_lists_resource_groups():
     
     with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
          patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
-         patch('azure_mcp_agent.cli.create_agent') as mock_create_agent, \
+         patch('azure_mcp_agent.cli.create_agent', new_callable=AsyncMock) as mock_create_agent, \
          patch('builtins.input') as mock_input, \
          patch('sys.stdout', new_callable=StringIO) as mock_stdout:
         
         # Setup mocks
-        mock_settings = MagicMock()
-        mock_settings.mcp_command = "npx"
-        mock_get_settings.return_value = mock_settings
+        mock_get_settings.return_value = mock_cli_settings
         mock_validate.return_value = True
         
         # Mock agent
@@ -86,11 +91,11 @@ async def test_cli_lists_resource_groups():
         
         # Verify no traceback or error messages
         assert "Traceback" not in output
-        assert "Error" not in output or "エラー" not in output
+        assert "Error" not in output and "エラー" not in output
 
 
 @pytest.mark.asyncio
-async def test_cli_handles_empty_input():
+async def test_cli_handles_empty_input(mock_cli_settings):
     """Test that CLI handles empty input gracefully
     
     User Story 1 / T013: エッジケーステスト
@@ -103,12 +108,10 @@ async def test_cli_handles_empty_input():
     
     with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
          patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
-         patch('azure_mcp_agent.cli.create_agent') as mock_create_agent, \
+         patch('azure_mcp_agent.cli.create_agent', new_callable=AsyncMock) as mock_create_agent, \
          patch('builtins.input') as mock_input:
         
-        mock_settings = MagicMock()
-        mock_settings.mcp_command = "npx"
-        mock_get_settings.return_value = mock_settings
+        mock_get_settings.return_value = mock_cli_settings
         mock_validate.return_value = True
         
         mock_agent = MagicMock()
@@ -162,7 +165,7 @@ async def test_cli_handles_configuration_error():
 
 
 @pytest.mark.asyncio
-async def test_cli_exits_on_quit_command():
+async def test_cli_exits_on_quit_command(mock_cli_settings):
     """Test that CLI exits cleanly on quit command
     
     User Story 1 / T013: 基本動作
@@ -177,12 +180,10 @@ async def test_cli_exits_on_quit_command():
     for exit_cmd in ["quit", "exit", "終了"]:
         with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
              patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
-             patch('azure_mcp_agent.cli.create_agent') as mock_create_agent, \
+             patch('azure_mcp_agent.cli.create_agent', new_callable=AsyncMock) as mock_create_agent, \
              patch('builtins.input') as mock_input:
             
-            mock_settings = MagicMock()
-            mock_settings.mcp_command = "npx"
-            mock_get_settings.return_value = mock_settings
+            mock_get_settings.return_value = mock_cli_settings
             mock_validate.return_value = True
             
             mock_agent = MagicMock()
@@ -211,7 +212,7 @@ def test_cli_main_function_exists():
         mock_asyncio_run.return_value = 0
         
         with patch('azure_mcp_agent.cli.print_banner'):
-            exit_code = main()
+            main()
             
             # Verify asyncio.run was called
             assert mock_asyncio_run.called
