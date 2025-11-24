@@ -87,7 +87,7 @@ async def test_cli_lists_resource_groups(mock_cli_settings):
         
         # Verify output contains expected content
         output = mock_stdout.getvalue()
-        assert "rg-test-1" in output or expected_rg_output in str(mock_agent.run_stream.mock_calls)
+        assert "rg-test-1" in output, "Expected resource group name in output"
         
         # Verify no traceback or error messages
         assert "Traceback" not in output
