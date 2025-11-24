@@ -78,6 +78,8 @@ async def run_interactive_session() -> int:
                 
                 # Process query with agent
                 logger.info(f"クエリを処理しています (長さ: {len(user_input)} 文字)")
+                # WARNING: DEBUG レベルでは問い合わせ内容（最初の100文字）がログに記録されます
+                # 機密情報を含む問い合わせは避けてください
                 logger.debug(f"クエリ内容: {user_input[:100]}...")  # 最初の100文字のみログ
                 
                 print("\nエージェント: ", end="", flush=True)
