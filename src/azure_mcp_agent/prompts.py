@@ -111,6 +111,7 @@ SUCCESS_MESSAGES = {
     "resource_groups_found": "リソースグループを {count} 件見つけました:",
     "storage_accounts_found": "ストレージアカウントを {count} 件見つけました:",
     "no_errors_found": "指定期間にエラーは検出されませんでした。",
+    # log_analytics_errors_found included for consistency with agent responses and potential future use
     "log_analytics_errors_found": "直近 {timespan} のエラー状況を要約しました。",
 }
 

@@ -459,7 +459,7 @@ async def test_cli_summarizes_log_analytics_errors(mock_cli_settings):
         
         # Verify no traceback or error messages
         assert "Traceback" not in output
-        assert "Error" not in output  # エラー is expected in Japanese content
+        assert "Error" not in output  # Check for absence of English error keywords (like 'Error'); Japanese 'エラー' is expected and acceptable in the content
 
 
 @pytest.mark.asyncio
