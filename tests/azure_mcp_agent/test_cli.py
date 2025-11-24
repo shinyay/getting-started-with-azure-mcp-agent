@@ -22,6 +22,7 @@ import azure_mcp_agent.cli
 
 # Import shared test response templates
 from tests.conftest import (
+    MOCK_STORAGE_ACCOUNTS_RESPONSE,
     MOCK_EMPTY_STORAGE_ACCOUNTS_RESPONSE,
     MOCK_RESOURCE_GROUP_NOT_FOUND_RESPONSE,
 )
@@ -242,13 +243,8 @@ async def test_cli_lists_storage_accounts_in_resource_group(mock_cli_settings):
     """
     run_interactive_session = azure_mcp_agent.cli.run_interactive_session
     
-    # Mock agent response
-    expected_storage_output = """リソースグループ「rg-test」内のストレージアカウント一覧:
-
-- sttest001 (location: japaneast, kind: StorageV2, sku: Standard_LRS)
-- sttest002 (location: japanwest, kind: BlobStorage, sku: Standard_GRS)
-
-合計 2 件のストレージアカウントが見つかりました。"""
+    # Mock agent response using shared template
+    expected_storage_output = MOCK_STORAGE_ACCOUNTS_RESPONSE.format(rg_name="rg-test")
     
     with patch('azure_mcp_agent.cli.get_settings') as mock_get_settings, \
          patch('azure_mcp_agent.cli.validate_mcp_server_available') as mock_validate, \
@@ -288,7 +284,7 @@ async def test_cli_lists_storage_accounts_in_resource_group(mock_cli_settings):
         
         # Verify output contains expected content
         output = mock_stdout.getvalue()
-        assert "sttest001" in output, "Expected storage account name in output"
+        assert "stappcore001" in output, "Expected storage account name in output"
         assert "StorageV2" in output, "Expected kind in output"
         assert "Standard_LRS" in output, "Expected SKU in output"
         
