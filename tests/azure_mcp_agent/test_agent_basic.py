@@ -306,9 +306,9 @@ async def test_agent_handles_empty_storage_accounts(mock_settings):
             
             response = ''.join(response_parts)
             
-            # Verify friendly Japanese message
+            # Verify friendly Japanese message matches template
             assert "ストレージアカウント" in response
-            assert "見つかりませんでした" in response or "存在しません" in response
+            assert "見つかりませんでした" in response
 
 
 @pytest.mark.asyncio
@@ -353,6 +353,6 @@ async def test_agent_handles_nonexistent_resource_group(mock_settings):
             
             response = ''.join(response_parts)
             
-            # Verify resource group not found error message in Japanese
+            # Verify resource group not found error message matches template
             assert "リソースグループ" in response
-            assert "見つかりませんでした" in response or "存在しません" in response
+            assert "見つかりませんでした" in response

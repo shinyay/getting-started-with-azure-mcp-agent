@@ -386,4 +386,4 @@ async def test_cli_handles_empty_storage_accounts_in_rg(mock_cli_settings):
         
         output = mock_stdout.getvalue()
         assert "ストレージアカウント" in output
-        assert "見つかりませんでした" in output or "存在しません" in output
+        assert "見つかりませんでした" in output
