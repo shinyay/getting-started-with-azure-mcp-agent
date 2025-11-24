@@ -72,23 +72,7 @@ async def test_agent_summarizes_log_analytics_errors_with_multiple_severities(mo
             # Simulate agent returning Japanese response with Log Analytics error summary
             async def mock_run_stream(*args, **kwargs):
                 """Simulate streaming response with error summary data"""
-                response_text = """直近 1 時間のエラー状況を要約しました。
-
-■ エラー件数の概要
-- Application エラー: 12 件
-- Platform エラー: 3 件
-- Warning: 5 件
-
-■ 代表的なエラーメッセージ
-- Application: "Database connection timeout occurred" (resource: /subscriptions/sub-123/resourceGroups/rg-app/providers/Microsoft.Web/sites/app-web)
-- Platform: "VM failed to start due to allocation error" (resource: /subscriptions/sub-123/resourceGroups/rg-infra/providers/Microsoft.Compute/virtualMachines/vm-01)
-- Warning: "High CPU usage detected" (resource: /subscriptions/sub-123/resourceGroups/rg-app/providers/Microsoft.Web/sites/app-api)
-
-■ 次に実行をおすすめする 3〜5 ステップ
-1. Application エラーについて、該当リソースのメトリック（CPU/メモリ/接続数）を確認してください。
-2. Database の接続文字列やネットワーク設定（NSG/Firewall）に変更がなかったかを確認してください。
-3. Platform エラーが継続する場合は、別リージョンでのリソース再作成を検討してください。
-4. 高 CPU 使用率の警告については、アプリケーションのスケールアウトやコード最適化を検討してください。"""
+                response_text = MOCK_LOG_ANALYTICS_ERROR_SUMMARY.format(timespan="1 時間")
                 
                 # Yield response chunks as the agent would
                 chunk = MagicMock()
